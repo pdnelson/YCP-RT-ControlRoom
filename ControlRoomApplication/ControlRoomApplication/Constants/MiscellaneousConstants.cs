@@ -5,11 +5,15 @@ namespace ControlRoomApplication.Constants
     public sealed class MiscellaneousConstants
     {
         public const int MAX_USERNAME_LENGTH = 15;
-        public const string LOCAL_DATABASE_NAME = "rtdatabase";
+        public const string LOCAL_DATABASE_NAME = "radio_telescope";
 
         // Can't create const instances, we have to use this as static readonly, sadly
         public static readonly Location JOHN_RUDY_PARK = new Location(76.7046, 40.0244, 395.0);
 
         public const double NEGLIGIBLE_POSITION_CHANGE_DEGREES = 0.1;
+
+        public static readonly Orientation THERMAL_CALIBRATION_ORIENTATION = new Orientation(200, 20);
+
+        public static readonly double THERMAL_CALIBRATION_OFFSET = 0.01;
     }
 }

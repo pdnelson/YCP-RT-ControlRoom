@@ -1,97 +1,109 @@
 ﻿using ControlRoomApplication.Entities;
 using ControlRoomApplication.Simulators.Hardware;
 using System.Windows.Forms;
+using System.IO;
 using System.Drawing;
 using ControlRoomApplication.Simulators.Hardware.AbsoluteEncoder;
 using ControlRoomApplication.Simulators.Hardware.MCU;
 using ControlRoomApplication.Controllers;
 using ControlRoomApplication.Controllers.BlkHeadUcontroler;
 using ControlRoomApplication.Database;
+using ControlRoomApplication.Constants;
+using System;
+using ControlRoomApplication.Main;
+using ControlRoomApplication.Controllers.Sensors;
+using ControlRoomApplication.Controllers.Communications;
+using System.Threading;
+using System.ComponentModel;
 
 namespace ControlRoomApplication.GUI
 {
     public partial class DiagnosticsForm : Form
     {
         private ControlRoom controlRoom;
-        EncoderReader encoderReader = new EncoderReader("192.168.7.2",1602);
+        EncoderReader encoderReader = new EncoderReader("192.168.7.2", 1602);
         ControlRoomApplication.Entities.Orientation azimuthOrientation = new ControlRoomApplication.Entities.Orientation();
-        
+        private RadioTelescopeController rtController { get; set; }
 
-        private SimulationMCU mtrCtrl;
-        private int timerTick = 0;
+        // Thread that monitors the overrides, and updates the buttons as necessary
+        BackgroundWorker updateOverride;
+
+
         private int demoIndex = 0;
         //private PLC PLC; This needs to be defined once I can get find the currect import
 
-        //TemperatureSensor myTemp = new TemperatureSensor();
-        FakeTempSensor myTemp = new FakeTempSensor();
+        FakeEncoderSensor myEncoder = new FakeEncoderSensor();
         /***********DEMO MODE VARIABLES**************/
-        private double[] azEncDemo = {0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0, 10.2, 10.4, 10.6, 10.8, 11.0, 11.2, 11.4, 11.6, 11.8, 12.0, 12.2, 12.4, 12.6, 12.8, 13.0, 13.2, 13.4, 13.6, 13.8, 14.0, 14.2, 14.4, 14.6, 14.8, 15.0, 15.2, 15.4, 15.6, 15.8, 16.0 }; //12    11.3 ticks per degree
-        private double[] elEncDemo = { 0, 0.2, 0.4, 0.6, 0.8, 1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0, 10.2, 10.4, 10.6, 10.8, 11.0, 11.2, 11.4, 11.6, 11.8, 12.0, 12.2, 12.4, 12.6, 12.8, 13.0, 13.2, 13.4, 13.6, 13.8, 14.0, 14.2, 14.4, 14.6, 14.8, 15.0, 15.2, 15.4, 15.6, 15.8, 16.0 }; //10 bits of precision, 2.8 
-       
+        DateTime currentEncodDate = DateTime.Now;
 
+        private bool graphClear = true;
 
-
-         
- 
         /***********DEMO MODE VARIABLES END*********/
-    
-       
+        // Encoder Variables
         double _azEncoderDegrees = 0;
         double _elEncoderDegrees = 0;
         double _elevationTemp = 0;
-        double _azimuthTemp = 0;
         int _azEncoderTicks = 0;
         int _elEncoderTicks = 0;
-        
-        
-        bool warningSent = false;
-        bool shutdownSent = false;
-        
+
+        // Azimuth Limit Switch Variables
+        bool _azCCWLimitChange = false;
+        bool _azCWLimitOld = false;
+
+        bool _azCWLimitChange = false;
+        bool _azCCWLimitOld = false;
+
+        // Elevation Limit Switch Variables
+        bool _elLowerLimitChange = false;
+        bool _elLowerLimitOld = false;
+
+        bool _elUpperLimitChange = false;
+        bool _elUpperLimitOld = false;
+
+        // Azimuth Proximity Sensor Variables
+        bool _azCCWProxOld = false;
+        bool _azCCWProxChange = false;
+
+        bool _azCWProxOld = false;
+        bool _azCWProxChange = false;
+
+        bool _azCloserUpperProx = false;
+
+        // Elevation Proximity Sensor Variables
+        bool _elLowerProxOld = false;
+        bool _elLowerProxChange = false;
+
+        bool _elUpperProxOld = false;
+        bool _elUpperProxChange = false;
+
+        // Alert Flags
+        bool farenheit = true;
+
         private int rtId;
-        private double az;
-        private double el;
+
+        // This is being passed through so the Weather Station override bool can be modified
+        private readonly MainForm mainF;
+
         private string[] statuses = { "Offline", "Offline", "Offline", "Offline" };
         private static readonly log4net.ILog logger =
             log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        /// <summary>
-        /// Initializes the diagnostic form based off of the specified configuration.
-        /// </summary>
-        /// 
-
-        
-
-        public DiagnosticsForm()
-        {
-            InitializeComponent();
-
-
-            az = 0.0;
-            el = 0.0;
-            timer1.Start();
-            logger.Info("DiagnosticsForm Initalized");
-        }
-
 
         /// <summary>
         /// Initializes the diagnostic form based off of the specified configuration.
         /// </summary>
         /// 
-        public DiagnosticsForm(ControlRoom controlRoom, int rtId)
+        public DiagnosticsForm(ControlRoom controlRoom, int new_rtId, MainForm mainF)
         {
             InitializeComponent();
-            az = 0.0;
-            el = 0.0;
-
-
-
-            
-
 
             this.controlRoom = controlRoom;
-            
 
-            this.rtId = rtId;
+            rtId = new_rtId;
+
+            this.mainF = mainF;
+            rtController = controlRoom.RadioTelescopeControllers.Find(x => x.RadioTelescope.Id == rtId);
+
 
             dataGridView1.ColumnCount = 2;
             dataGridView1.Columns[0].HeaderText = "Hardware";
@@ -108,34 +120,47 @@ namespace ControlRoomApplication.GUI
             dataGridView1.Rows.Add(mcuRow);
             dataGridView1.Update();
 
-            SetCurrentAzimuthAndElevation();
+            //MCU_Statui.ColumnCount = 2;
+            //MCU_Statui.Columns[0].HeaderText = "Status name";
+            //MCU_Statui.Columns[1].HeaderText = "value";
+
+            controlRoom.RadioTelescopeControllers.Find(x => x.RadioTelescope.Id == rtId).RadioTelescope.Micro_controler.BringUp();
+
+            SetCurrentWeatherData();
+            runDiagScriptsButton.Enabled = false;
+
+            // Updates the override buttons so they reflect what the actual override values are
+            updateButtons();
+            updateOverride = new BackgroundWorker();
+            updateOverride.DoWork += new DoWorkEventHandler(checkOverrideVars);
+            updateOverride.RunWorkerAsync();
+
             logger.Info("DiagnosticsForm Initalized");
         }
 
-        private void SetCurrentAzimuthAndElevation()
+        private void SetCurrentWeatherData()
         {
-            label3.Text = controlRoom.RadioTelescopeControllers[rtId].GetCurrentOrientation().Azimuth.ToString("0.00");
-            label4.Text = controlRoom.RadioTelescopeControllers[rtId].GetCurrentOrientation().Elevation.ToString("0.00");
-             
-           
+            windSpeedLabel.Text = Math.Round(controlRoom.WeatherStation.GetWindSpeed(), 2).ToString();
+            windDirLabel.Text = controlRoom.WeatherStation.GetWindDirection();
+            dailyRainfallLabel.Text = Math.Round(controlRoom.WeatherStation.GetDailyRain(), 2).ToString();
+            rainRateLabel.Text = Math.Round(controlRoom.WeatherStation.GetRainRate(), 2).ToString();
+            //outsideTempLabel.Text = Math.Round(controlRoom.WeatherStation.GetOutsideTemp(), 2).ToString();
+            //insideTempLabel.Text = Math.Round(controlRoom.WeatherStation.GetInsideTemp(), 2).ToString();
+            barometricPressureLabel.Text = Math.Round(controlRoom.WeatherStation.GetBarometricPressure(), 2).ToString();
         }
 
         /// <summary>
         /// Gets and displays the current statuses of the hardware components for the specified configuration.
         /// </summary>
         private void GetHardwareStatuses() {
-            if(controlRoom.RadioTelescopes[rtId].SpectraCyberController.IsConsideredAlive()) {
+            if (rtController.RadioTelescope.SpectraCyberController.IsConsideredAlive()) {
                 statuses[0] = "Online";
             }
 
-            if(controlRoom.WeatherStation.IsConsideredAlive()) {
+            if (controlRoom.WeatherStation.IsConsideredAlive()) {
                 statuses[1] = "Online";
             }
         }
-
-
-       
-      
 
         public delegate void SetStartTimeTextCallback(string text);
         public void SetStartTimeText(string text)
@@ -186,142 +211,182 @@ namespace ControlRoomApplication.GUI
          * ************************************************************/
         private void timer1_Tick(object sender, System.EventArgs e)
         {
+            double currWindSpeed = controlRoom.WeatherStation.GetWindSpeed();//wind speed
 
-            double elevationTemperature = 0.0;
-            double azimuthTemperature = 0.0;
-            //int ticks = azEncoder.CurrentPositionTicks;
+            double testVal = rtController.RadioTelescope.Encoders.GetCurentOrientation().Azimuth;
 
-            //Read actual encoder values
-            // _azEncoderDegrees = Controllers.BlkHeadUcontroler.EncoderReader.GetCurentOrientation().Azimuth;
-            // _elEncoderDegrees = Controllers.BlkHeadUcontroler.EncoderReader.GetCurentOrientation().Elevation;
-
-            _azEncoderDegrees = controlRoom.RadioTelescopeControllers[rtId].GetAbsoluteOrientation().Azimuth;//.GetCurrentOrientation().Azimuth;
-            _elEncoderDegrees = controlRoom.RadioTelescopeControllers[rtId].GetAbsoluteOrientation().Elevation; //GetCurrentOrientation().Elevation;
-
-
-            elevationTemperature = DatabaseOperations.GetCurrentTemp( SensorLocationEnum.EL_MOTOR ).temp;
-            azimuthTemperature = DatabaseOperations.GetCurrentTemp( SensorLocationEnum.AZ_MOTOR ).temp;
-
-            this.label22.Text = (!controlRoom.RadioTelescopeControllers[rtId].finished_exicuting_move()).ToString();
+            _azEncoderDegrees = rtController.RadioTelescope.Encoders.GetCurentOrientation().Azimuth;
+            _elEncoderDegrees = rtController.RadioTelescope.Encoders.GetCurentOrientation().Elevation;
 
             timer1.Interval = 200;
-           
 
             if (selectDemo.Checked == true)
             {
-                elevationTemperature = myTemp.GetElevationTemperature();
-                azimuthTemperature = myTemp.GetAzimuthTemperature();
+                rtController.RadioTelescope.Micro_controler.setStableOrTesting(false);
 
+                // Simulating Encoder Sensors
+                TimeSpan elapsedEncodTime = DateTime.Now - currentEncodDate;
 
-                if(demoIndex < 79)
+                if (elapsedEncodTime.TotalSeconds > 15)
                 {
-                    _azEncoderDegrees = azEncDemo[demoIndex++];
-                    _elEncoderDegrees = elEncDemo[demoIndex];
+                    if (myEncoder.getLeftOrRight() == true && (myEncoder.GetAzimuthAngle() < 340 && myEncoder.GetAzimuthAngle() > 15))
+                        myEncoder.SetAzimuthAngle(340);
+                    else if (myEncoder.getLeftOrRight() == false && (myEncoder.GetAzimuthAngle() > 15 && myEncoder.GetAzimuthAngle() < 340))
+                        myEncoder.SetAzimuthAngle(15);
 
+                    if (myEncoder.getUpOrDown() == true && (myEncoder.GetElevationAngle() < 80 && myEncoder.GetElevationAngle() > 0))
+                        myEncoder.SetElevationAngle(80);
+                    else if (myEncoder.getUpOrDown() == false && (myEncoder.GetElevationAngle() > 0 && myEncoder.GetElevationAngle() < 80))
+                        myEncoder.SetElevationAngle(0);
 
-                    _azEncoderTicks = (int)(_azEncoderDegrees * 11.38);
-                    _elEncoderTicks = (int)(_elEncoderDegrees * 2.8);
+                    currentEncodDate = DateTime.Now;
                 }
-                else
-                {
-                    demoIndex = 0;
-                }
-               
+
+                _azEncoderDegrees = myEncoder.GetAzimuthAngle();
+                _elEncoderDegrees = myEncoder.GetElevationAngle();
+
+                _azEncoderTicks = (int)(_azEncoderDegrees * 11.38);
+                _elEncoderTicks = (int)(_elEncoderDegrees * 2.8);
+
 
             }
-            
-            
-            fldElTemp.Text = elevationTemperature.ToString();
-            fldAzTemp.Text = azimuthTemperature.ToString();
-            lblAzEncoderDegrees.Text = _azEncoderDegrees.ToString();
-            lblElEncoderDegrees.Text = _elEncoderDegrees.ToString();
+
+            double ElMotTemp = rtController.RadioTelescope.Micro_controler.tempData.elevationTemp;
+            double AzMotTemp = rtController.RadioTelescope.Micro_controler.tempData.azimuthTemp;
+            float insideTemp = controlRoom.WeatherStation.GetInsideTemp();
+            float outsideTemp = controlRoom.WeatherStation.GetOutsideTemp();
+
+            double ElMotTempCel = (ElMotTemp - 32) * (5.0 / 9);
+            double AzMotTempCel = (AzMotTemp - 32) * (5.0 / 9);
+            double insideTempCel = (insideTemp - 32) * (5.0 / 9);
+            double outsideTempCel = (outsideTemp - 32) * (5.0 / 9);
+
+            if (farenheit == false)
+            {
+                InsideTempUnits.Text = "Celsius";
+                outTempUnits.Text = "Celsius";
+                AZTempUnitLabel.Text = "Celsius";
+                ElTempUnitLabel.Text = "Celsius";
+                outsideTempLabel.Text = Math.Round(insideTempCel, 2).ToString();
+                insideTempLabel.Text = Math.Round(outsideTempCel, 2).ToString();
+                fldElTemp.Text = Math.Round(ElMotTempCel, 2).ToString();
+                fldAzTemp.Text = Math.Round(AzMotTempCel, 2).ToString();
+            }
+            else if (farenheit == true)
+            {
+                InsideTempUnits.Text = "Farenheit";
+                outTempUnits.Text = "Farenheit";
+                AZTempUnitLabel.Text = "Farenheit";
+                ElTempUnitLabel.Text = "Farenheit";
+                outsideTempLabel.Text = Math.Round(controlRoom.WeatherStation.GetOutsideTemp(), 2).ToString();
+                insideTempLabel.Text = Math.Round(controlRoom.WeatherStation.GetInsideTemp(), 2).ToString();
+                fldElTemp.Text = Math.Round(ElMotTemp, 2).ToString();
+                fldAzTemp.Text = Math.Round(AzMotTemp, 2).ToString();
+            }
+
+            // Temperature of motors
+            fldElTemp.Text = rtController.RadioTelescope.Micro_controler.tempData.elevationTemp.ToString();
+            fldAzTemp.Text = rtController.RadioTelescope.Micro_controler.tempData.azimuthTemp.ToString();
+
+            // Encoder Position in both degrees and motor ticks
+            lblAzEncoderDegrees.Text = Math.Round(_azEncoderDegrees, 3).ToString();
             lblAzEncoderTicks.Text = _azEncoderTicks.ToString();
+
+            // lblElEncoderDegrees.Text = _elEncoderDegrees.ToString();
+            lblElEncoderDegrees.Text =Math.Round(_elEncoderDegrees, 3).ToString();
             lblElEncoderTicks.Text = _elEncoderTicks.ToString();
 
+            // Proximity and Limit Switches 
+            lblAzLimStatus1.Text = rtController.RadioTelescope.PLCDriver.limitSwitchData.Azimuth_CCW_Limit.ToString();
+            lblAzLimStatus2.Text = rtController.RadioTelescope.PLCDriver.limitSwitchData.Azimuth_CW_Limit.ToString();
 
-            /*** Temperature Logic Start***/
+            lblElLimStatus1.Text = rtController.RadioTelescope.PLCDriver.limitSwitchData.Elevation_Lower_Limit.ToString();
+            lblElLimStatus2.Text = rtController.RadioTelescope.PLCDriver.limitSwitchData.Elevation_Upper_Limit.ToString();
 
-            if(elevationTemperature <= 79 && azimuthTemperature <= 79)
+            lblAzHomeStatus1.Text = rtController.RadioTelescope.PLCDriver.homeSensorData.Azimuth_Home_One.ToString();
+            lblAzHomeStatus2.Text = rtController.RadioTelescope.PLCDriver.homeSensorData.Azimuth_Home_Two.ToString();
+            lblELHomeStatus.Text = rtController.RadioTelescope.PLCDriver.homeSensorData.Elevation_Home.ToString();
+
+            lbEstopStat.Text = rtController.RadioTelescope.PLCDriver.plcInput.Estop.ToString();
+            lbGateStat.Text = rtController.RadioTelescope.PLCDriver.plcInput.Gate_Sensor.ToString();
+
+            GetHardwareStatuses();
+
+            SetCurrentWeatherData();
+
+            dataGridView1.Update();
+
+            // Spectra Cyber Tab Updates
+            spectraModeTypeVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.spectraCyberMode.ToString();
+
+            BandwidthVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.bandwidth.GetValue();
+            frequencyVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.frequency.ToString();
+            IFGainVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.IFGain.ToString();
+
+            if(rtController.RadioTelescope.SpectraCyberController.configVals.spectraCyberMode == SpectraCyberModeTypeEnum.SPECTRAL)
+                DCGainVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.specGain.GetValue();
+            else if(rtController.RadioTelescope.SpectraCyberController.configVals.spectraCyberMode == SpectraCyberModeTypeEnum.CONTINUUM)
+                DCGainVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.contGain.GetValue();
+
+            IntegrationStepVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.integrationStep.ToString();
+
+            OffsetVoltageVal.Text = rtController.RadioTelescope.SpectraCyberController.configVals.offsetVoltage.ToString();
+
+            // Spectra Cyber Graph Update
+            if (rtController.RadioTelescope.SpectraCyberController.Schedule.GetMode() == SpectraCyberScanScheduleMode.CONTINUOUS_SCAN
+                || rtController.RadioTelescope.SpectraCyberController.Schedule.GetMode() == SpectraCyberScanScheduleMode.SCHEDULED_SCAN
+                || rtController.RadioTelescope.SpectraCyberController.Schedule.GetMode() == SpectraCyberScanScheduleMode.SINGLE_SCAN)
             {
-                warningLabel.Visible = false;
-                lblShutdown.Visible = false;
-                fanLabel.Visible = false;
-                warningSent = false;
-                shutdownSent = false;
-            }
-            else if(elevationTemperature > 79 && elevationTemperature < 100 || azimuthTemperature > 79 && azimuthTemperature < 100)
-            {
-                if(warningSent == false)
+                if (rtController.RadioTelescope.SpectraCyberController.configVals.spectraCyberMode == SpectraCyberModeTypeEnum.SPECTRAL)
                 {
-                    warningLabel.Visible = true;
+                    if(graphClear == true)
+                    {
+                        spectraCyberScanChart.Series.Clear();
+                        spectraCyberScanChart.Series.Add("Spectral");
+                        spectraCyberScanChart.Series["Spectral"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+                        spectraCyberScanChart.ChartAreas["ChartArea1"].AxisX.Title = "Frequency";
+                        graphClear = false;
+                    }
+
+                    double intensity = rtController.RadioTelescope.SpectraCyberController.configVals.rfData;
+                    double frequency = rtController.RadioTelescope.SpectraCyberController.configVals.bandscan;
+
+                    spectraCyberScanChart.Series["Spectral"].Points.AddXY(frequency, intensity);
+
+                    if (frequency >= rtController.RadioTelescope.SpectraCyberController.configVals.frequency / 2)
+                        spectraCyberScanChart.Series["Spectral"].Points.Clear();
                 }
-                else
+                else if (rtController.RadioTelescope.SpectraCyberController.configVals.spectraCyberMode == SpectraCyberModeTypeEnum.CONTINUUM)
                 {
-                    warningLabel.Visible = false;
+                    if (graphClear == true)
+                    {
+                        spectraCyberScanChart.Series.Clear();
+                        spectraCyberScanChart.Series.Add("Continuum");
+                        spectraCyberScanChart.Series["Continuum"].ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Spline;
+                        spectraCyberScanChart.ChartAreas["ChartArea1"].AxisX.Title = "Time";
+                        graphClear = false;
+                    }
+
+                    double intensity = rtController.RadioTelescope.SpectraCyberController.configVals.rfData;
+                    double time = rtController.RadioTelescope.SpectraCyberController.configVals.scanTime;
+
+                    spectraCyberScanChart.Series["Continuum"].Points.AddXY(time, intensity);
+
                 }
-               
-                lblShutdown.Visible = false;
-                warningLabel.ForeColor = Color.Yellow;
-                warningLabel.Text = "Warning Sent";
-
-                warningSent = true;
-
-                fanLabel.Visible = true;
-                fanLabel.ForeColor = Color.Blue;
-                fanLabel.Text = "Fans On";
-               
-            }
-            else if(elevationTemperature >= 100 || azimuthTemperature >= 100)
-            {
-                warningLabel.Visible = false;
-
-                if (shutdownSent == false)
-                {
-                    lblShutdown.Visible = true;
-                }
-                else
-                {
-                    lblShutdown.Visible = false;
-                }
-               
-                lblShutdown.ForeColor = Color.Red;
-                lblShutdown.Text = "Shutdown Sent";
-
-                shutdownSent = true;
-
-                fanLabel.Visible = true;
-                fanLabel.ForeColor = Color.Blue;
-                fanLabel.Text = "Fans Stay On";
-
-
             }
             else
             {
-                warningLabel.Visible = false;
-                warningLabel.ForeColor = Color.Black;
-                warningLabel.Text = "";
-
-                fanLabel.Visible = false;
-                fanLabel.ForeColor = Color.Blue;
-                fanLabel.Text = "Fans On";
+                graphClear = true;
             }
 
-            /*** Temperature Logic End***/
-            /*
-            if (controlRoom.RTControllerManagementThreads[rtId].AppointmentToDisplay != null)
+            // Console Log Output Update
+            consoleLogBox.Text = mainF.log.loggerQueue;
+
+            if (!consoleLogBox.Focused)
             {
-                SetStartTimeText(controlRoom.RTControllerManagementThreads[rtId].AppointmentToDisplay.StartTime.ToLocalTime().ToString("hh:mm tt"));
-                SetEndTimeText(controlRoom.RTControllerManagementThreads[rtId].AppointmentToDisplay.EndTime.ToLocalTime().ToString("hh:mm tt"));
-                SetApptStatusText(controlRoom.RTControllerManagementThreads[rtId].AppointmentToDisplay.Status.ToString());
+                consoleLogBox.SelectionStart = consoleLogBox.TextLength;
+                consoleLogBox.ScrollToCaret();
             }
-            //*/
-            GetHardwareStatuses();
-
-            SetCurrentAzimuthAndElevation();
-
-            dataGridView1.Update();
-           
-
         }
 
         private void DiagnosticsForm_Load(object sender, System.EventArgs e)
@@ -337,15 +402,6 @@ namespace ControlRoomApplication.GUI
         private void btnTest_Click(object sender, System.EventArgs e)
         {
             double temperature = 0;
-
-            if(double.TryParse(txtTemperature.Text, out temperature))
-            {
-                fldAzTemp.Text = temperature.ToString();
-            }
-            else
-            {
-                MessageBox.Show("Invalid entry in Temperature field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
         }
 
         private void btnAddOneTemp_Click(object sender, System.EventArgs e)
@@ -360,7 +416,7 @@ namespace ControlRoomApplication.GUI
 
         private void button1_Click(object sender, System.EventArgs e)
         {
-            _elevationTemp -= 1;
+
         }
 
         private void button2_Click(object sender, System.EventArgs e)
@@ -368,34 +424,34 @@ namespace ControlRoomApplication.GUI
             _elevationTemp -= 5;
         }
 
-        private void btnAddXTemp_Click(object sender, System.EventArgs e)
-        {
-            double tempVal; //temperature value
-           
+        //private void btnAddXTemp_Click(object sender, System.EventArgs e)
+        //{
+        //    double tempVal; //temperature value
 
-            if (double.TryParse(txtCustTemp.Text, out tempVal))
-            {
-                _elevationTemp += tempVal;
-            }
-            else
-            {
-                MessageBox.Show("Invalid entry in Temperature field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+
+        //    if (double.TryParse(txtCustTemp.Text, out tempVal))
+        //    {
+        //        _elevationTemp += tempVal;
+        //    }
+        //    else
+        //    {
+        //        MessageBox.Show("Invalid entry in Temperature field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        //    }
+        //}
 
         private void button3_Click(object sender, System.EventArgs e)
         {
-            double tempVal; //temperature value
+           // double tempVal; //temperature value
 
 
-            if (double.TryParse(txtCustTemp.Text, out tempVal))
-            {
-                _elevationTemp -= tempVal;
-            }
-            else
-            {
-                MessageBox.Show("Invalid entry in Temperature field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            //if (double.TryParse(txtCustTemp.Text, out tempVal))
+            //{
+            //    _elevationTemp -= tempVal;
+            //}
+            //else
+            //{
+            //    MessageBox.Show("Invalid entry in Temperature field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            //}
         }
 
         private void timer2_Tick(object sender, System.EventArgs e)
@@ -403,15 +459,11 @@ namespace ControlRoomApplication.GUI
 
         }
 
-        private void lblAzLimStatus2_Click(object sender, System.EventArgs e)
-        {
-
-        }
 
         private void button4_Click(object sender, System.EventArgs e)
         {
             _azEncoderDegrees += 1;
-            
+
         }
 
         private void button5_Click(object sender, System.EventArgs e)
@@ -422,7 +474,7 @@ namespace ControlRoomApplication.GUI
         private void btnSubtractOneEncoder_Click(object sender, System.EventArgs e)
         {
             _azEncoderDegrees -= 1;
-            
+
         }
 
         private void btnSubtractFiveEncoder_Click(object sender, System.EventArgs e)
@@ -457,6 +509,427 @@ namespace ControlRoomApplication.GUI
             else
             {
                 MessageBox.Show("Invalid entry in Encoder field", "Error!", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void editDiagScriptsButton_Click(object sender, EventArgs e)
+        {
+            logger.Info("Edit Scripts Button Clicked");
+            int caseSwitch = diagnosticScriptCombo.SelectedIndex;
+
+            switch (caseSwitch)
+            {
+                case 0:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.HitAzimuthLeftLimitSwitch();//Change left to CCW
+                    //Hit Azimuth Counter-Clockwise Limit Switch (index 0 of control script combo)
+                    break;
+                case 1:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.HitAzimuthRightLimitSwitch();
+                    //Hit Azimuth Clockwise Limit Switch (index 1 of control script combo)
+                    break;
+                case 2:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.HitElevationLowerLimitSwitch();
+                    //Elevation Lower Limit Switch (index 2 of control script combo)
+                    break;
+                case 3:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.HitElevationUpperLimitSwitch();
+                    //Elevation Upper Limit Switch (index 3 of control script combo)
+                    break;
+                case 4:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.Hit_CW_Hardstop();
+                    //Hit Clockwise Hardstop (index 4 of control script combo)
+                    break;
+                case 5:
+                    rtController.ExecuteRadioTelescopeControlledStop();
+                    rtController.RadioTelescope.PLCDriver.Hit_CCW_Hardstop();
+                    //Hit Counter-Clockwise Hardstop (index 4 of control script combo)
+                    break;
+                default:
+
+                    //Script cannot be run
+                    break;
+            }
+
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            string filename = Directory.GetCurrentDirectory() + "\\" + "UIDoc.pdf";
+            if (File.Exists(filename))
+                System.Diagnostics.Process.Start(filename);
+        }
+
+        private void ORAzimuthSens1_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideAzimuthProx1)
+            {
+                ORAzimuthSens1.Text = "OVERRIDING";
+                ORAzimuthSens1.BackColor = System.Drawing.Color.Red;
+                rtController.setOverride("azimuth proximity (1)", true);
+            }
+            else if (rtController.overrides.overrideAzimuthProx1)
+            {
+                ORAzimuthSens1.Text = "ENABLED";
+                ORAzimuthSens1.BackColor = System.Drawing.Color.LimeGreen;
+                rtController.setOverride("azimuth proximity (1)", false);
+            }
+        }
+
+        private void ORAzimuthSens2_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideAzimuthProx2)
+            {
+                ORAzimuthSens2.Text = "OVERRIDING";
+                ORAzimuthSens2.BackColor = System.Drawing.Color.Red;
+                rtController.setOverride("azimuth proximity (2)", true);
+            }
+            else if (rtController.overrides.overrideAzimuthProx2)
+            {
+                ORAzimuthSens2.Text = "ENABLED";
+                ORAzimuthSens2.BackColor = System.Drawing.Color.LimeGreen;
+                rtController.setOverride("azimuth proximity (2)", false);
+            }
+        }
+
+        private void ElevationProximityOverideButton1_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideElevatProx1)
+            {
+                ElevationProximityOveride1.Text = "OVERRIDING";
+                ElevationProximityOveride1.BackColor = System.Drawing.Color.Red;
+                rtController.setOverride("elevation proximity (1)", true);
+            }
+            else if (rtController.overrides.overrideElevatProx1)
+            {
+                ElevationProximityOveride1.Text = "ENABLED";
+                ElevationProximityOveride1.BackColor = System.Drawing.Color.LimeGreen;
+                rtController.setOverride("elevation proximity (1)", false);
+            }
+        }
+
+        private void ElevationProximityOverideButton2_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideElevatProx2)
+            {
+                ElevationProximityOveride2.Text = "OVERRIDING";
+                ElevationProximityOveride2.BackColor = System.Drawing.Color.Red;
+                rtController.setOverride("elevation proximity (2)", true);
+            }
+            else
+            {
+                ElevationProximityOveride2.Text = "ENABLED";
+                ElevationProximityOveride2.BackColor = System.Drawing.Color.LimeGreen;
+                rtController.setOverride("elevation proximity (2)", false);
+            }
+        }
+
+        private void diagnosticScriptCombo_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (diagnosticScriptCombo.SelectedIndex >= 0)
+            {
+                runDiagScriptsButton.Enabled = true;
+                runDiagScriptsButton.BackColor = System.Drawing.Color.LimeGreen;
+            }
+        }
+
+        private void warningLabel_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        /** Conversion from fahrenheit to celsius (Currently not being used) 
+            if(celOrFar)
+            {
+                elevationTemperature = (elevationTemperature - 32) * (5.0 / 9);
+                azimuthTemperature = (azimuthTemperature - 32) * (5.0 / 9);
+            }**/
+
+        private void celTempConvert_Click(object sender, EventArgs e)
+        {
+
+            
+
+            if (farenheit == true)
+            {
+                farenheit = false;
+                celTempConvert.BackColor = System.Drawing.Color.LimeGreen;
+                farTempConvert.BackColor = System.Drawing.Color.DarkGray;
+                
+            }
+        }
+
+        private void farTempConvert_Click(object sender, EventArgs e)
+        {
+          
+            
+
+            if (farenheit == false)
+            {
+                farenheit = true;
+                celTempConvert.BackColor = System.Drawing.Color.DarkGray;
+                farTempConvert.BackColor = System.Drawing.Color.LimeGreen;
+            
+            }
+        }
+
+        private void WSOverride_Click(object sender, EventArgs e)
+        {
+            if (!mainF.getWSOverride())
+            {
+                WSOverride.Text = "OVERRIDING";
+                WSOverride.BackColor = System.Drawing.Color.Red;
+                mainF.setWSOverride(true);
+                rtController.setOverride("weather station", true);
+
+            }
+            else
+            {
+                WSOverride.Text = "ENABLED";
+                WSOverride.BackColor = System.Drawing.Color.LimeGreen;
+                mainF.setWSOverride(false);
+                rtController.setOverride("weather station", false);
+            }
+
+            // Change value in database
+            DatabaseOperations.SwitchOverrideForSensor(SensorItemEnum.WEATHER_STATION);
+        }
+
+        private void MGOverride_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideGate)
+            {
+                MGOverride.Text = "OVERRIDING";
+                MGOverride.BackColor = System.Drawing.Color.Red;
+                rtController.setOverride("main gate", true);
+            }
+            else if (rtController.overrides.overrideGate)
+            {
+                MGOverride.Text = "ENABLED";
+                MGOverride.BackColor = System.Drawing.Color.LimeGreen;
+                rtController.setOverride("main gate", false);
+            }
+
+            // Change value in database
+            DatabaseOperations.SwitchOverrideForSensor(SensorItemEnum.GATE);
+        }
+
+        private void lblElEncoderDegrees_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label19_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void AzMotTempSensOverride_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideAzimuthMotTemp)
+            {
+                AzMotTempSensOverride.Text = "OVERRIDING";
+                AzMotTempSensOverride.BackColor = System.Drawing.Color.Red;
+
+                rtController.setOverride("azimuth motor temperature", true);
+            }
+            else if (rtController.overrides.overrideAzimuthMotTemp)
+            {
+                AzMotTempSensOverride.Text = "ENABLED";
+                AzMotTempSensOverride.BackColor = System.Drawing.Color.LimeGreen;
+
+                rtController.setOverride("azimuth motor temperature", false);
+            }
+
+            // Change value in database
+            DatabaseOperations.SwitchOverrideForSensor(SensorItemEnum.AZIMUTH_MOTOR);
+        }
+
+        private void ElMotTempSensOverride_Click(object sender, EventArgs e)
+        {
+            if (!rtController.overrides.overrideElevatMotTemp)
+            {
+                ElMotTempSensOverride.Text = "OVERRIDING";
+                ElMotTempSensOverride.BackColor = System.Drawing.Color.Red;
+
+                rtController.setOverride("elevation motor temperature", true);
+            }
+            else if (rtController.overrides.overrideElevatMotTemp)
+            {
+                ElMotTempSensOverride.Text = "ENABLED";
+                ElMotTempSensOverride.BackColor = System.Drawing.Color.LimeGreen;
+
+                rtController.setOverride("elevation motor temperature", false);
+            }
+
+            // Change value in database
+            DatabaseOperations.SwitchOverrideForSensor(SensorItemEnum.ELEVATION_MOTOR);
+        }
+
+        private void buttonWS_Click(object sender, EventArgs e)
+        {
+            // create a override by the control room computer
+            controlRoom.RTControllerManagementThreads[0].ActiveOverrides.Add(new Override(SensorItemEnum.WIND, "Control Room Computer"));
+            controlRoom.RTControllerManagementThreads[0].checkCurrentSensorAndOverrideStatus();
+          
+        }
+
+        private void label4_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        // Getter for RadioTelescopeController
+        public RadioTelescopeController getRTController()
+        {
+            return rtController;
+        }
+
+        private void label40_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label39_Click(object sender, EventArgs e)
+        {
+        }
+
+        // Runs a check on the override variables, and if there is a change, updates the buttons appropriately
+        private void checkOverrideVars(object sender, DoWorkEventArgs e)
+        {
+            // Current overrides
+            bool currMain = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.GATE);
+            bool currWS = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.WEATHER_STATION);
+            bool currAZ = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.AZIMUTH_MOTOR);
+            bool currEL = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.ELEVATION_MOTOR);
+            bool newMain, newWS, newAZ, newEL;
+
+
+            while (true)
+            {
+                newMain = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.GATE);
+                newWS = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.WEATHER_STATION);
+                newAZ = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.AZIMUTH_MOTOR);
+                newEL = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.ELEVATION_MOTOR);
+
+                if (currWS != newWS || currMain != newMain || currAZ != newAZ || currEL != newEL)
+                {
+                    currMain = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.GATE);
+                    currWS = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.WEATHER_STATION);
+                    currAZ = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.AZIMUTH_MOTOR);
+                    currEL = DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.ELEVATION_MOTOR);
+
+                    this.Invoke((MethodInvoker)delegate
+                    {
+                        updateButtons();
+                    });
+
+                }
+                Thread.Sleep(1000);
+            }
+        }
+
+        // Loads the override buttons
+        public void updateButtons()
+        {
+            // Weather Station Override
+            if(DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.WEATHER_STATION))
+            {
+                WSOverride.Text = "OVERRIDING";
+                WSOverride.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                WSOverride.Text = "ENABLED";
+                WSOverride.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Main Gate Override
+            if(DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.GATE))
+            {
+                MGOverride.Text = "OVERRIDING";
+                MGOverride.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                MGOverride.Text = "ENABLED";
+                MGOverride.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Azimuth Motor Override
+            if(DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.AZIMUTH_MOTOR))
+            {
+                AzMotTempSensOverride.Text = "OVERRIDING";
+                AzMotTempSensOverride.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                AzMotTempSensOverride.Text = "ENABLED";
+                AzMotTempSensOverride.BackColor = System.Drawing.Color.LimeGreen;
+            }
+            
+            // Elevation Motor Override
+            if(DatabaseOperations.GetOverrideStatusForSensor(SensorItemEnum.ELEVATION_MOTOR))
+            {
+                ElMotTempSensOverride.Text = "OVERRIDING";
+                ElMotTempSensOverride.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                ElMotTempSensOverride.Text = "ENABLED";
+                ElMotTempSensOverride.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Azimuth Limit Switch -10 Degrees Override
+            if(rtController.overrides.overrideAzimuthProx1)
+            {
+                ORAzimuthSens1.Text = "OVERRIDING";
+                ORAzimuthSens1.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                ORAzimuthSens1.Text = "ENABLED";
+                ORAzimuthSens1.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Azimuth Limit Switch -375 Degrees Override
+            if(rtController.overrides.overrideAzimuthProx2)
+            {
+                ORAzimuthSens2.Text = "OVERRIDING";
+                ORAzimuthSens2.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                ORAzimuthSens2.Text = "ENABLED";
+                ORAzimuthSens2.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Elevation Limit Switch 0 Degrees Override
+            if(rtController.overrides.overrideElevatProx1)
+            {
+                ElevationProximityOveride1.Text = "OVERRIDING";
+                ElevationProximityOveride1.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                ElevationProximityOveride1.Text = "ENABLED";
+                ElevationProximityOveride1.BackColor = System.Drawing.Color.LimeGreen;
+            }
+
+            // Elevation Limit Switch 90 Degrees Override
+            if (rtController.overrides.overrideElevatProx2)
+            {
+                ElevationProximityOveride2.Text = "OVERRIDING";
+                ElevationProximityOveride2.BackColor = System.Drawing.Color.Red;
+            }
+            else
+            {
+                ElevationProximityOveride2.Text = "ENABLED";
+                ElevationProximityOveride2.BackColor = System.Drawing.Color.LimeGreen;
             }
         }
     }

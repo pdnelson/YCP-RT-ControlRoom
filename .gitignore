@@ -265,3 +265,10 @@ AWSConstants.cs
 /ControlRoomApplication/ControlRoomApplication/Constants/AWSConstants.cs
 /ControlRoomApplication/results.xml
 /ControlRoomApplication/ControlRoomApplication.dll
+
+# Sensitive push notification data
+/ControlRoomApplication/ControlRoomApplication/Controllers/Communications/pushNotification.cs
+/ControlRoomApplication/ControlRoomApplication/Controllers/Communications/EmailPartConstants.cs
+
+# Gradle stuff
+/.gradle

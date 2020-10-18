@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ControlRoomApplication.Controllers.Sensors;
 
 
 namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
@@ -12,18 +13,24 @@ namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
     /// <summary>
     /// Abstract Class for the Microcontroller
     /// </summary>
-    /// 
+    ///
     public abstract class AbstractMicrocontroller {
 
-        public AbstractMicrocontroller() { }
+        public Sensors.TempSensorData tempData;
+        private bool _stableOrTesting;
+
+        private static readonly log4net.ILog logger =
+            log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
+        public AbstractMicrocontroller()
+        {
+        }
 
         //FourierTransform Class
         /// <summary>
         /// 
         /// </summary>
         /// 
-
-
 
         /// <summary>
         /// Start listetning for TCP Connection
@@ -44,25 +51,33 @@ namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
                     if(data.type == "temp") {
                         temps.Add( Temperature.Generate( element.time , element.val , SensorLocationEnumTypeConversionHelper.FromInt( element.loc ) ) );
                         threshold = 80;
-
                     } else if(data.type == "acc") {
                         accs.Add( Acceleration.Generate( element.time , element.val , element.x , element.y , element.z , SensorLocationEnumTypeConversionHelper.FromInt( element.loc ) ) );
                         threshold = 1.65;
                     } else {
-                        Console.WriteLine( "Datatype not found" );
+                        logger.Info("Datatype not found");
                         return;
                     }
                     if(element.val > threshold) {
-                       // Console.WriteLine( element.val );
-                      //  Console.WriteLine( element.time - DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() );
                     }
 
                 }
+
                 DatabaseOperations.AddSensorData( temps );
                 DatabaseOperations.AddSensorData( accs );
             } catch(Exception e) {
-                Console.WriteLine( e + "line 229" );
+                logger.Info(e + "line 229");
             }
+        }
+
+        public bool getStableOrTesting()
+        {
+            return _stableOrTesting;
+        }
+
+        public void setStableOrTesting(bool testOrNot)
+        {
+            _stableOrTesting = testOrNot;
         }
     }
 }

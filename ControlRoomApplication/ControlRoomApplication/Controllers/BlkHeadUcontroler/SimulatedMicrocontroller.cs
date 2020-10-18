@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using ControlRoomApplication.Constants;
 
 namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
 
@@ -12,19 +13,21 @@ namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
     /// </summary>
     public class SimulatedMicrocontroller : AbstractMicrocontroller {
         Random rand = new Random();
-        dynamic sensorData;
         private double _minMotorTemperature;
         private double _maxMotorTemperature;
-        private List<int> Templocations = new List<int> { 0 , 1 , 3 };
+        private int count;
         private List<int> ACClocations = new List<int> { 0 , 1 , 2 };
         private Thread simthread;
+
         /// <summary>
-        ///Set the minimum and maximum temperature for the motors
+        ///Set the minimum and maximum temperature for the motors and set whether it will be a static run or a testing run
         /// </summary>
-        public SimulatedMicrocontroller( double minMotorTemperature , double maxMotorTemperature ) {
+        public SimulatedMicrocontroller( double minMotorTemperature , double maxMotorTemperature, bool motorSimType ) {
             _minMotorTemperature = minMotorTemperature;
             _maxMotorTemperature = maxMotorTemperature;
-
+            setStableOrTesting(motorSimType);
+            count = 0;
+            tempData = new Sensors.TempSensorData();
         }
 
         /// <summary>
@@ -46,17 +49,69 @@ namespace ControlRoomApplication.Controllers.BlkHeadUcontroler {
 
 
         /// <summary>
-        /// Creates a data point with a random value, the time it was created (now), and type: temp
+        /// Creates a data point with a constant value, the time it was created (now), and location: 0 for azimuth and 1 for elevation
         /// </summary>
         /// Returns SensorData containing the value, time, and type, and an int representing location
         public dynamic generateTemperatureData() {
-            var temperatureList = new dynamic[1];
+            var temperatureList = new dynamic[2];
 
-            for(int i = 0; i < temperatureList.Length; i++) {
-                int index = rand.Next( Templocations.Count );
-                temperatureList[i] = new { val = rand.Next( (int)_minMotorTemperature , (int)_maxMotorTemperature ) , time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + i , loc = Templocations[index] };
+            if (getStableOrTesting())
+            {
+                temperatureList[0] = new {val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 0 };
+                temperatureList[1] = new { val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 1 };
 
+                tempData.azimuthTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                tempData.azimuthTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                tempData.elevationTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                tempData.elevationTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                count = 0;
             }
+            else
+            {
+
+                if (count < 10)
+                {
+                    temperatureList[0] = new { val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 0 };
+                    temperatureList[1] = new { val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 1 };
+
+                    tempData.azimuthTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                    tempData.azimuthTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    tempData.elevationTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                    tempData.elevationTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    count++;
+                }
+                else if (count >= 10 && count <= 15)
+                {
+                    temperatureList[0] = new { val = SimulationConstants.OVERHEAT_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 0 };
+                    temperatureList[1] = new { val = SimulationConstants.OVERHEAT_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 1 };
+
+                    tempData.azimuthTemp = SimulationConstants.OVERHEAT_MOTOR_TEMP;
+                    tempData.azimuthTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    tempData.elevationTemp = SimulationConstants.OVERHEAT_MOTOR_TEMP;
+                    tempData.elevationTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    count++;
+                }
+                else
+                {
+                    temperatureList[0] = new { val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 0 };
+                    temperatureList[1] = new { val = SimulationConstants.STABLE_MOTOR_TEMP, time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), loc = 1 };
+
+                    tempData.azimuthTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                    tempData.azimuthTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    tempData.elevationTemp = SimulationConstants.STABLE_MOTOR_TEMP;
+                    tempData.elevationTempTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+                    count = 0;
+                }
+            }
+
             var temperatureData = new { type = "temp" , data = temperatureList };
             return temperatureData;
         }

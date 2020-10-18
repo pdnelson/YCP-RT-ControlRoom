@@ -1,6 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using ControlRoomApplication.Constants;
 using ControlRoomApplication.Entities;
+using System.Threading;
+using ControlRoomApplication.Controllers.Sensors;
+using ControlRoomApplication.Database;
+using ControlRoomApplication.Controllers.Communications;
 
 namespace ControlRoomApplication.Controllers
 {
@@ -8,6 +14,14 @@ namespace ControlRoomApplication.Controllers
     {
         public RadioTelescope RadioTelescope { get; set; }
         public CoordinateCalculationController CoordinateController { get; set; }
+        private bool tempAcceptable = true;
+        public OverrideSwitchData overrides;
+
+        // Thread that monitors database current temperature
+        Thread tempM;
+
+        private static readonly log4net.ILog logger =
+            log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
         /// <summary>
         /// Constructor that takes an AbstractRadioTelescope object and sets the
@@ -18,6 +32,13 @@ namespace ControlRoomApplication.Controllers
         {
             RadioTelescope = radioTelescope;
             CoordinateController = new CoordinateCalculationController(radioTelescope.Location);
+
+            overrides = new OverrideSwitchData();
+
+            tempM = new Thread(tempMonitor);
+            tempM.Start();
+
+
         }
 
         /// <summary>
@@ -30,10 +51,7 @@ namespace ControlRoomApplication.Controllers
         /// <returns> Whether or not the RT responded. </returns>
         public bool TestCommunication()
         {
-            return RadioTelescope.PLCDriver.Test_Conection();
-
-            //byte[] ByteResponse = RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.TEST_CONNECTION);
-            //return ResponseMetBasicExpectations(ByteResponse, 0x13) && (ByteResponse[3] == 0x1);
+            return RadioTelescope.PLCDriver.Test_Connection();
         }
 
         /// <summary>
@@ -46,17 +64,7 @@ namespace ControlRoomApplication.Controllers
         /// <returns> An orientation object that holds the current azimuth/elevation of the scale model. </returns>
         public Orientation GetCurrentOrientation()
         {
-
             return RadioTelescope.PLCDriver.read_Position();
-            /*
-            byte[] ByteResponse = RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.GET_CURRENT_AZEL_POSITIONS);
-            if (!ResponseMetBasicExpectations(ByteResponse, 0x13))
-            {
-                return null;
-            }
-
-            return new Orientation(BitConverter.ToDouble(ByteResponse, 3), BitConverter.ToDouble(ByteResponse, 11));
-            //*/
         }
 
 
@@ -70,69 +78,6 @@ namespace ControlRoomApplication.Controllers
             return RadioTelescope.Encoders.GetCurentOrientation();
         }
 
-
-        /// <summary>
-        /// Gets the current status of the four limit switches.
-        /// 
-        /// The implementation of this functionality is on a "per-RT" basis, as
-        /// in this may or may not work, it depends on if the derived
-        /// AbstractRadioTelescope class has implemented it.
-        /// </summary>
-        /// <returns>
-        ///     An array of four booleans, where "true" means that the limit switch was triggered, and "false" means otherwise.
-        ///     The order of the limit switches are as follows:
-        ///         0: Under limit    azimuth
-        ///         1: Under warning  azimuth
-        ///         2: Over  warning  azimuth
-        ///         3: Over  limit    azimuth
-        ///         4: Under limit    elevation
-        ///         5: Under warning  elevation
-        ///         6: Over  warning  elevation
-        ///         7: Over  limit    elevation
-        /// </returns>
-        public bool[] GetCurrentLimitSwitchStatuses()
-        {
-            //throw new NotImplementedException();
-            return RadioTelescope.PLCDriver.Get_Limit_switches();
-
-            /*
-            byte[] ByteResponse = RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.GET_CURRENT_LIMIT_SWITCH_STATUSES);
-
-            if (!ResponseMetBasicExpectations(ByteResponse, 0x13))
-            {
-                return null;
-            }
-
-            bool[] Statuses = new bool[4];
-
-            byte DataByte = ByteResponse[3];
-            for (int i = 0; i < 4; i++)
-            {
-                switch (PLCLimitSwitchStatusConversionHelper.GetFromByte((byte)((DataByte >> (2 * (3 - i))) & 0x3)))
-                {
-                    case PLCLimitSwitchStatusEnum.WITHIN_WARNING_LIMITS:
-                        {
-                            Statuses[i] = true;
-                            break;
-                        }
-
-                    case PLCLimitSwitchStatusEnum.WITHIN_SAFE_LIMITS:
-                        {
-                            Statuses[i] = false;
-                            break;
-                        }
-
-                    default:
-                        {
-                            throw new NotImplementedException("Unrecognized/Invalid response for byte-casted limit switch status.");
-                        }
-                }
-            }
-
-            return Statuses;
-            //*/
-        }
-
         /// <summary>
         /// Gets the status of the interlock system associated with this Radio Telescope.
         /// 
@@ -144,8 +89,6 @@ namespace ControlRoomApplication.Controllers
         public bool GetCurrentSafetyInterlockStatus()
         {
             return RadioTelescope.PLCDriver.Get_interlock_status();
-           // byte[] ByteResponse = RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.GET_CURRENT_SAFETY_INTERLOCK_STATUS);
-            //return ResponseMetBasicExpectations(ByteResponse, 0x13) && (ByteResponse[3] == 0x1);
         }
 
         /// <summary>
@@ -157,8 +100,7 @@ namespace ControlRoomApplication.Controllers
         /// </summary>
         public bool CancelCurrentMoveCommand()
         {
-            return RadioTelescope.PLCDriver.Cancle_move();
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.CANCEL_ACTIVE_OBJECTIVE_AZEL_POSITION));
+            return RadioTelescope.PLCDriver.Cancel_move();
         }
 
         /// <summary>
@@ -172,7 +114,6 @@ namespace ControlRoomApplication.Controllers
         public bool ShutdownRadioTelescope()
         {
             return RadioTelescope.PLCDriver.Shutdown_PLC_MCU();
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.SHUTDOWN));
         }
 
         /// <summary>
@@ -182,37 +123,24 @@ namespace ControlRoomApplication.Controllers
         /// in this may or may not work, it depends on if the derived
         /// AbstractRadioTelescope class has implemented it.
         /// </summary>
-        public bool CalibrateRadioTelescope()
+        public Task<bool> ThermalCalibrateRadioTelescope()
         {
-            return RadioTelescope.PLCDriver.Calibrate();
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.CALIBRATE));
+            if (!tempAcceptable) return Task.FromResult(false);
+            return RadioTelescope.PLCDriver.Thermal_Calibrate(); // MOVE
         }
 
         /// <summary>
         /// Method used to request to set configuration of elements of the RT.
-        /// 
-        /// The implementation of this functionality is on a "per-RT" basis, as
-        /// in this may or may not work, it depends on if the derived
-        /// AbstractRadioTelescope class has implemented it.
+        /// takes the starting speed of the motor in RPM (speed of tellescope after gearing)
         /// </summary>
-        public bool ConfigureRadioTelescope(int startSpeedAzimuth, int startSpeedElevation, int homeTimeoutAzimuth, int homeTimeoutElevation)
+        /// <param name="startSpeedAzimuth">RPM</param>
+        /// <param name="startSpeedElevation">RPM</param>
+        /// <param name="homeTimeoutAzimuth">SEC</param>
+        /// <param name="homeTimeoutElevation">SEC</param>
+        /// <returns></returns>
+        public bool ConfigureRadioTelescope(double startSpeedAzimuth, double startSpeedElevation, int homeTimeoutAzimuth, int homeTimeoutElevation)
         {
-            return RadioTelescope.PLCDriver.Configure_MCU(startSpeedAzimuth, startSpeedElevation, homeTimeoutAzimuth, homeTimeoutElevation);
-            /*
-            if ((startSpeedAzimuth < 1) || (startSpeedElevation < 1) || (homeTimeoutAzimuth < 0) || (homeTimeoutElevation < 0)
-                || (startSpeedAzimuth > 1000000) || (startSpeedElevation > 1000000) || (homeTimeoutAzimuth > 300) || (homeTimeoutElevation > 300))
-            {
-                return false;
-            }
-
-            return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(
-                PLCCommandAndQueryTypeEnum.SET_CONFIGURATION,
-                startSpeedAzimuth,
-                startSpeedElevation,
-                homeTimeoutAzimuth,
-                homeTimeoutElevation
-            ));
-            //*/
+            return RadioTelescope.PLCDriver.Configure_MCU(startSpeedAzimuth, startSpeedElevation, homeTimeoutAzimuth, homeTimeoutElevation); // NO MOVE
         }
 
         /// <summary>
@@ -222,11 +150,12 @@ namespace ControlRoomApplication.Controllers
         /// The implementation of this functionality is on a "per-RT" basis, as
         /// in this may or may not work, it depends on if the derived
         /// AbstractRadioTelescope class has implemented it.
+        /// <see cref="Controllers.BlkHeadUcontroler.EncoderReader"/>
         /// </summary>
-        public bool MoveRadioTelescopeToOrientation(Orientation orientation)
+        public Task<bool> MoveRadioTelescopeToOrientation(Orientation orientation)//TODO: once its intagrated use the microcontrole to get the current opsition 
         {
-            return RadioTelescope.PLCDriver.Move_to_orientation(orientation, RadioTelescope.PLCDriver.read_Position());
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.SET_OBJECTIVE_AZEL_POSITION, orientation));
+            if (!tempAcceptable) return Task.FromResult(false);
+            return RadioTelescope.PLCDriver.Move_to_orientation(orientation, RadioTelescope.PLCDriver.read_Position()); // MOVE
         }
 
         /// <summary>
@@ -237,54 +166,52 @@ namespace ControlRoomApplication.Controllers
         /// in this may or may not work, it depends on if the derived
         /// AbstractRadioTelescope class has implemented it.
         /// </summary>
-        public bool MoveRadioTelescopeToCoordinate(Coordinate coordinate)
+        public Task<bool> MoveRadioTelescopeToCoordinate(Coordinate coordinate)
         {
-            return MoveRadioTelescopeToOrientation(CoordinateController.CoordinateToOrientation(coordinate, DateTime.UtcNow));
+            if (!tempAcceptable) return Task.FromResult(false);
+            return MoveRadioTelescopeToOrientation(CoordinateController.CoordinateToOrientation(coordinate, DateTime.UtcNow)); // MOVE
         }
 
-        /// <summary>
-        /// Method used to request to start jogging one of the Radio Telescope's axes
-        /// at a speed, in either the clockwise or counter-clockwise direction.
-        /// 
-        /// The implementation of this functionality is on a "per-RT" basis, as
-        /// in this may or may not work, it depends on if the derived
-        /// AbstractRadioTelescope class has implemented it.
-        /// </summary>
-        public bool StartRadioTelescopeJog(RadioTelescopeAxisEnum axis, int speed, bool clockwise)
-        {
-            return RadioTelescope.PLCDriver.Start_jog(axis, speed, clockwise);
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.START_JOG_MOVEMENT, axis, speed, clockwise));
-        }
 
         /// <summary>
         /// Method used to request to start jogging the Radio Telescope's azimuth
-        /// at a speed, in either the clockwise or counter-clockwise direction.
+        /// at a speed (in RPM), in either the clockwise or counter-clockwise direction.
         /// 
         /// The implementation of this functionality is on a "per-RT" basis, as
         /// in this may or may not work, it depends on if the derived
         /// AbstractRadioTelescope class has implemented it.
         /// </summary>
-        public bool StartRadioTelescopeAzimuthJog(int speed, bool clockwise)
+        public bool StartRadioTelescopeAzimuthJog(double speed, bool PositiveDIR)
         {
-            return StartRadioTelescopeJog(RadioTelescopeAxisEnum.AZIMUTH, speed, clockwise);
+            if (!tempAcceptable) return false;
+            return RadioTelescope.PLCDriver.Start_jog( speed, PositiveDIR, 0,false );// MOVE
         }
 
         /// <summary>
         /// Method used to request to start jogging the Radio Telescope's elevation
-        /// at a speed, in either the clockwise or counter-clockwise direction.
+        /// at a speed (in RPM), in either the clockwise or counter-clockwise direction.
         /// 
         /// The implementation of this functionality is on a "per-RT" basis, as
         /// in this may or may not work, it depends on if the derived
         /// AbstractRadioTelescope class has implemented it.
         /// </summary>
-        public bool StartRadioTelescopeElevationJog(int speed, bool clockwise)
+        public bool StartRadioTelescopeElevationJog(double speed, bool PositiveDIR)
         {
-            return StartRadioTelescopeJog(RadioTelescopeAxisEnum.ELEVATION, speed, clockwise);
+            if (!tempAcceptable) return false;
+            return RadioTelescope.PLCDriver.Start_jog( 0,false,speed, PositiveDIR);// MOVE
+        }
+
+
+        /// <summary>
+        /// send a clear move to the MCU to stop a jog
+        /// </summary>
+        public bool ExecuteRadioTelescopeStopJog() {
+            return RadioTelescope.PLCDriver.Stop_Jog();
         }
 
         /// <summary>
         /// Method used to request that all of the Radio Telescope's movement comes
-        /// to a controlled stop.
+        /// to a controlled stop. this will not work for jog moves use 
         /// 
         /// The implementation of this functionality is on a "per-RT" basis, as
         /// in this may or may not work, it depends on if the derived
@@ -292,8 +219,7 @@ namespace ControlRoomApplication.Controllers
         /// </summary>
         public bool ExecuteRadioTelescopeControlledStop()
         {
-            return RadioTelescope.PLCDriver.Controled_stop(RadioTelescopeAxisEnum.UNKNOWN, true);
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.CONTROLLED_STOP));
+            return RadioTelescope.PLCDriver.Controled_stop(); // NO MOVE
         }
 
         /// <summary>
@@ -306,47 +232,30 @@ namespace ControlRoomApplication.Controllers
         /// </summary>
         public bool ExecuteRadioTelescopeImmediateStop()
         {
-            return RadioTelescope.PLCDriver.Immediade_stop();
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.IMMEDIATE_STOP));
+            return RadioTelescope.PLCDriver.Immediade_stop(); // NO MOVE
         }
 
-        /// <summary>
-        /// Method used to request that all of the Radio Telescope's movement comes
-        /// to an immediate stop.
-        /// 
-        /// The implementation of this functionality is on a "per-RT" basis, as
-        /// in this may or may not work, it depends on if the derived
-        /// AbstractRadioTelescope class has implemented it.
-        /// </summary>
-        public bool ExecuteMoveRelativeAzimuth(RadioTelescopeAxisEnum axis, int speed, int position)
-        {
-            int positionTranslationAZ=0, positionTranslationEL=0;
-            if (axis == RadioTelescopeAxisEnum.ELEVATION)
-            {
-                positionTranslationEL = position;
-            }
-            else if (axis == RadioTelescopeAxisEnum.AZIMUTH)
-            {
-                positionTranslationAZ = position;
-            }
-            else return false;
 
-            return RadioTelescope.PLCDriver.relative_move(speed, (ushort) 50, positionTranslationAZ, positionTranslationEL);
-            //return MinorResponseIsValid(RadioTelescope.PLCClient.RequestMessageSend(PLCCommandAndQueryTypeEnum.TRANSLATE_AZEL_POSITION, axis, speed, position));
-        }
         /// <summary>
         /// return true if the RT has finished the previous move comand
         /// </summary>
-        public bool finished_exicuting_move()
+        public bool finished_exicuting_move( RadioTelescopeAxisEnum axis )//[7]
         {
-            bool[] flags =RadioTelescope.PLCDriver.GET_MCU_Status();
-            /*/Console.Write("\n");
-            foreach (bool flag in flags)
-            {
-                Console.Write(" " + flag + ",");
+             
+            var Taz = RadioTelescope.PLCDriver.GET_MCU_Status( RadioTelescopeAxisEnum.AZIMUTH );  //Task.Run( async () => { await  } );
+            var Tel = RadioTelescope.PLCDriver.GET_MCU_Status( RadioTelescopeAxisEnum.ELEVATION );
+
+            Taz.Wait();
+            bool azFin = Taz.Result[(int)MCUConstants.MCUStutusBitsMSW.Move_Complete];
+            bool elFin = Tel.GetAwaiter().GetResult()[(int)MCUConstants.MCUStutusBitsMSW.Move_Complete];
+            if(axis == RadioTelescopeAxisEnum.BOTH) {
+                return elFin && azFin;
+            } else if(axis == RadioTelescopeAxisEnum.AZIMUTH) {
+                return azFin;
+            } else if(axis == RadioTelescopeAxisEnum.ELEVATION) {
+                return elFin;
             }
-            Console.Write("\n");//*/
-            return flags[7];
+            return false;
         }
 
 
@@ -364,23 +273,141 @@ namespace ControlRoomApplication.Controllers
             return ResponseMetBasicExpectations(MinorResponseBytes, 0x3);
         }
 
-        private static RFData GenerateRFData(SpectraCyberResponse spectraCyberResponse)
+        // Checks the motor temperatures against acceptable ranges every second
+        private void tempMonitor()
         {
-            RFData rfData = new RFData();
-            rfData.TimeCaptured = spectraCyberResponse.DateTimeCaptured;
-            rfData.Intensity = spectraCyberResponse.DecimalData;
-            return rfData;
+            // Getting initial current temperatures
+            Temperature currAZ = DatabaseOperations.GetCurrentTemp(SensorLocationEnum.AZ_MOTOR);
+            bool AZ = checkTemp(currAZ);
+
+            Temperature currEL = DatabaseOperations.GetCurrentTemp(SensorLocationEnum.EL_MOTOR);
+            bool EL = checkTemp(currEL);
+
+            // Loop through every one second to get new temperatures. If the temperature has changed, notify the user
+            while (true)
+            {
+                // Only updates the info if the temperature has changed
+                if (currAZ.temp != DatabaseOperations.GetCurrentTemp(SensorLocationEnum.AZ_MOTOR).temp) {
+                    currAZ = DatabaseOperations.GetCurrentTemp(SensorLocationEnum.AZ_MOTOR);
+                    AZ = checkTemp(currAZ);
+                }
+
+                if (currEL.temp != DatabaseOperations.GetCurrentTemp(SensorLocationEnum.EL_MOTOR).temp)
+                {
+                    currEL = DatabaseOperations.GetCurrentTemp(SensorLocationEnum.EL_MOTOR);
+                    EL = checkTemp(currEL);
+                }
+
+                // Determines if the temperature is acceptable for both motors
+                if (AZ && EL) tempAcceptable = true;
+                else tempAcceptable = false;
+                Thread.Sleep(1000);
+            }
         }
 
-        private static List<RFData> GenerateRFDataList(List<SpectraCyberResponse> spectraCyberResponses)
+        /// <summary>
+        ///  Checks that the motor temperatures are within acceptable ranges. If the temperature exceeds
+        ///  the corresponding value in SimulationConstants.cs, it will return false, otherwise
+        ///  it will return true if everything is good.
+        ///  Tl;dr:
+        ///  False - bad
+        ///  True - good
+        /// </summary>
+        /// <returns>override bool</returns>
+        public bool checkTemp(Temperature t)
         {
-            List<RFData> rfDataList = new List<RFData>();
-            foreach (SpectraCyberResponse response in spectraCyberResponses)
+            // get maximum temperature threshold
+            double max;
+
+            // Determine whether azimuth or elevation
+            String s;
+            bool b;
+            if (t.location_ID == (int)SensorLocationEnum.AZ_MOTOR)
             {
-                rfDataList.Add(GenerateRFData(response));
+                s = "Azimuth";
+                b = overrides.overrideAzimuthMotTemp;
+                max = DatabaseOperations.GetThresholdForSensor(SensorItemEnum.AZ_MOTOR_TEMP);
+            }
+            else
+            {
+                s = "Elevation";
+                b = overrides.overrideElevatMotTemp;
+                max = DatabaseOperations.GetThresholdForSensor(SensorItemEnum.ELEV_MOTOR_TEMP);
             }
 
-            return rfDataList;
+            // Check temperatures
+            if (t.temp < SimulationConstants.STABLE_MOTOR_TEMP)
+            {
+                logger.Info(s + " motor temperature BELOW stable temperature by " + Math.Truncate(SimulationConstants.STABLE_MOTOR_TEMP - t.temp) + " degrees Fahrenheit.");
+                pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature BELOW stable temperature by " + Math.Truncate(SimulationConstants.STABLE_MOTOR_TEMP - t.temp) + " degrees Fahrenheit.");
+
+                // Only overrides if switch is true
+                if (!b) return false;
+                else return true;
+            }
+            else if (t.temp > max)
+            {
+                logger.Info(s + " motor temperature OVERHEATING by " + Math.Truncate(t.temp - max) + " degrees Fahrenheit.");
+                pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature OVERHEATING by " + Math.Truncate(t.temp - max) + " degrees Fahrenheit.");
+
+                // Only overrides if switch is true
+                if (!b) return false;
+                else return true;
+            }
+            logger.Info(s + " motor temperature stable.");
+            pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature stable.");
+
+            return true;
+        }
+
+        /// <summary>
+        /// This will set the overrides based on input. Takes in the sensor that it will be changing,
+        /// and then the status, true or false.
+        /// true = overriding
+        /// false = enabled
+        /// </summary>
+        /// <param name="sensor"></param>
+        /// <param name="set"></param>
+        public void setOverride(String sensor, bool set)
+        {
+            if (sensor.Equals("azimuth motor temperature")) overrides.overrideAzimuthMotTemp = set;
+            else if (sensor.Equals("elevation motor temperature")) overrides.overrideElevatMotTemp = set;
+            else if (sensor.Equals("main gate"))
+            {
+                overrides.overrideGate = set;
+                RadioTelescope.PLCDriver.setregvalue((ushort)PLC_modbus_server_register_mapping.GATE_OVERRIDE, Convert.ToUInt16(set));
+            }
+            else if (sensor.Equals("elevation proximity (2)")) {
+                overrides.overrideElevatProx2 = set;
+                RadioTelescope.PLCDriver.setregvalue((ushort)PLC_modbus_server_register_mapping.EL_90_LIMIT, Convert.ToUInt16(set));
+            }
+            else if (sensor.Equals("elevation proximity (1)"))
+            {
+                overrides.overrideElevatProx1 = set;
+                RadioTelescope.PLCDriver.setregvalue((ushort)PLC_modbus_server_register_mapping.EL_10_LIMIT, Convert.ToUInt16(set));
+            }
+            else if (sensor.Equals("azimuth proximity (2)"))
+            {
+                overrides.overrideAzimuthProx2 = set;
+                RadioTelescope.PLCDriver.setregvalue((ushort)PLC_modbus_server_register_mapping.AZ_375_LIMIT, Convert.ToUInt16(set));
+
+            }
+            else if (sensor.Equals("azimuth proximity (1)"))
+            {
+                overrides.overrideAzimuthProx1 = set;
+                RadioTelescope.PLCDriver.setregvalue((ushort)PLC_modbus_server_register_mapping.AZ_0_LIMIT, Convert.ToUInt16(set));
+            }
+
+            if (set)
+            {
+                logger.Info("Overriding " + sensor + " sensor.");
+                pushNotification.send("SENSOR OVERRIDES", "Overriding " + sensor + " sensor.");
+            }
+            else
+            {
+                logger.Info("Enabled " + sensor + " sensor.");
+                pushNotification.send("SENSOR OVERRIDES", "Enabled " + sensor + " sensor.");
+            }
         }
     }
 }
