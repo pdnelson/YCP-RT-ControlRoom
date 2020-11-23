@@ -38,7 +38,12 @@ namespace ControlRoomApplication.Controllers.Communications
         }
         public static void setHtml(string html)
         {
-            Html = html;
+            Html = $@"<html>
+<head></head>
+<body>
+    {html}
+</body>
+</html>";
         }
         public static string getAttachmentPath()
         {

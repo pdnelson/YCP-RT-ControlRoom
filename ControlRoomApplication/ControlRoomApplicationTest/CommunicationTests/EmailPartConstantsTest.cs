@@ -57,12 +57,9 @@ namespace ControlRoomApplicationTest.CommunicationTests
         [TestMethod]
         public void TestSetHtml()
         {
-            string html = @"<html>
-<head></head>
-<body>
+            string html = @"<body>
     <h1>This is a test</h1>
-</body>
-</html";
+</body>";
             EmailFields.setHtml(html);
 
             Assert.IsTrue(EmailFields.Html == html);

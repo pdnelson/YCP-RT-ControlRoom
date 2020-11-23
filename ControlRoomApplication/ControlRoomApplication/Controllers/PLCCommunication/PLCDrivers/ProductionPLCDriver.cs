@@ -264,13 +264,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth CCW Limit Switch Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth CCW limit switch hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth CCW limit switch hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth CCW limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CCW limit switch hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -278,13 +273,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth CCW Limit Switch Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth CCW limit switch NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth CCW limit switch NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth CCW limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CCW limit switch NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -300,13 +290,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth_Home_One Sensor Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth_Home_One sensor hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth_Home_One sensor hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth_Home_One sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_One sensor hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -314,13 +299,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth_Home_One Sensor Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth_Home_One sensor NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth_Home_One sensor NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth_Home_One sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_One sensor NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -336,13 +316,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth_Home_Two Sensor Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth_Home_Two sensor hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth_Home_Two sensor hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+    <p>Azimuth_Home_Two sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_Two sensor hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -350,13 +325,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth_Home_Two Sensor Not Hit");;
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth_Home_Two sensor NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth_Home_Two sensor NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth_Home_Two sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_Two sensor NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -373,13 +343,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth CW Limit Switch Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth CW limit switch hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth CW limit switch hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth CW limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CW limit switch hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -387,13 +352,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Azimuth CW Limit Switch Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nAzimuth CW limit switch NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Azimuth CW limit switch NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Azimuth CW limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CW limit switch NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -410,13 +370,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Lower Limit Switch Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation lower limit switch hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation lower limit switch hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation lower limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation lower limit switch hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -424,13 +379,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Lower Limit Switch Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation lower limit switch NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation lower limit switch NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation lower limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation lower limit switch NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -446,13 +396,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Home Sensor Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation home sensor hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation home sensor hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation home sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation home sensor hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -460,13 +405,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Home Sensor Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation home sensor NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation home sensor NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation home sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation home sensor NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -483,13 +423,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Upper Limit Switch Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation upper limit switch hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation upper limit switch hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation upper limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation upper limit switch hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -497,13 +432,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Elevation Upper Limit Switch Not Hit");
                                 EmailFields.setText("LIMIT SWITCH\r\nElevation upper limit switch NOT hit");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>LIMIT SWITCH</h1>
-    <p>Elevation upper limit switch NOT hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
+<p>Elevation upper limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation upper limit switch NOT hit");
                                 pushNotification.sendEmail(false);
                             }
@@ -519,13 +449,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("gate opened");
                                 EmailFields.setText("GATE ACTIVITY\r\nGate has been opened.");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>GATE ACTIVITY</h1>
-    <p>Gate has been opened.</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>GATE ACTIVITY</h1>
+<p>Gate has been opened.</p>");
                                 pushNotification.send("GATE ACTIVITY", "Gate has been opened.");
                                 pushNotification.sendEmail(false);
                             }
@@ -533,13 +458,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("gate closed");
                                 EmailFields.setText("GATE ACTIVITY\r\nGate has been closed.");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>GATE ACTIVITY</h1>
-    <p>Gate has been closed.</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>GATE ACTIVITY</h1>
+<p>Gate has been closed.</p>");
                                 pushNotification.send("GATE ACTIVITY", "Gate has been closed.");
                                 pushNotification.sendEmail(false);
                             }
@@ -555,13 +475,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Estop Hit");
                                 EmailFields.setText("E-STOP ACTIVITY\r\nE-stop has been hit.");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>E-STOP ACTIVITY</h1>
-    <p>E-stop has been hit</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>E-STOP ACTIVITY</h1>
+<p>E-stop has been hit</p>");
                                 pushNotification.send("E-STOP ACTIVITY", "E-stop has been hit.");
                                 pushNotification.sendEmail(false);
                             }
@@ -569,13 +484,8 @@ namespace ControlRoomApplication.Controllers
                             {
                                 logger.Info("Estop released");
                                 EmailFields.setText("E-STOP ACTIVITY\r\nE-stop has been released.");
-                                EmailFields.setHtml($@"<html>
-<head></head>
-<body>
-    <h1>E-STOP ACTIVITY</h1>
-    <p>E-stop has been released</p>
-</body>
-</html");
+                                EmailFields.setHtml($@"<h1>E-STOP ACTIVITY</h1>
+<p>E-stop has been released</p>");
                                 pushNotification.send("E-STOP ACTIVITY", "E-stop has been released.");
                                 pushNotification.sendEmail(false);
                             }

@@ -47,19 +47,15 @@ namespace ControlRoomApplicationTest.CommunicationTests
             EmailFields.setSender("SystemTest@ycpradiotelescope.com");
             EmailFields.setSubject("Amazon SES Test");
             EmailFields.setText("AmazonSES Test (.NET)\r\nThis email was sent through AmazonSES using the AWS SDK for .NET.");
-            EmailFields.setHtml(@"<html>
-<head></head>
-<body>
+            EmailFields.setHtml(@"
   <h1>Amazon SES Test (AWS SDK for .NET)</h1>
   <p>This email was sent with
     <a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the
     <a href='https://aws.amazon.com/sdk-for-net/'>
-      AWS SDK for .NET</a>.</p>
-</body>
-</html>");
+      AWS SDK for .NET</a>.</p>");
 
 
-            User fakeUser = new User("Test", "User", "testradiotelescopeuser@ycp.edu", NotificationTypeEnum.ALL);
+            User fakeUser = new User("Test", "User", "mtibbett@ycp.edu", NotificationTypeEnum.ALL);
 
             Assert.IsTrue(pushNotification.sendEmail(true));
             Assert.IsTrue(pushNotification.SendToAppointmentUser(fakeUser));
@@ -73,16 +69,11 @@ namespace ControlRoomApplicationTest.CommunicationTests
             EmailFields.setSender("SystemTest@ycpradiotelescope.com");
             EmailFields.setSubject("Amazon SES Test WITH ATTACHMENT");
             EmailFields.setText("AmazonSES Test (.NET) with Attachment\r\nThis email and its attachment were sent through AmazonSES using the AWS SDK for .NET.");
-            EmailFields.setHtml(@"<html>
-<head></head>
-<body>
-  <h1>Amazon SES Test (AWS SDK for .NET)</h1>
+            EmailFields.setHtml(@"<h1>Amazon SES Test (AWS SDK for .NET)</h1>
   <p>This email and its attachment were sent with
     <a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the
     <a href='https://aws.amazon.com/sdk-for-net/'>
-      AWS SDK for .NET</a>.</p>
-</body>
-</html>");
+      AWS SDK for .NET</a>.</p>");
 
             // If you want to actually get emails while testing, change the email address below to whatever one you want to receive at.
             // This was already done earlier.
