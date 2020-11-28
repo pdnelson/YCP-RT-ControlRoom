@@ -47,12 +47,11 @@ namespace ControlRoomApplicationTest.CommunicationTests
             EmailFields.setSender("SystemTest@ycpradiotelescope.com");
             EmailFields.setSubject("Amazon SES Test");
             EmailFields.setText("AmazonSES Test (.NET)\r\nThis email was sent through AmazonSES using the AWS SDK for .NET.");
-            EmailFields.setHtml(@"
-  <h1>Amazon SES Test (AWS SDK for .NET)</h1>
-  <p>This email was sent with
-    <a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the
-    <a href='https://aws.amazon.com/sdk-for-net/'>
-      AWS SDK for .NET</a>.</p>");
+            EmailFields.setHtml(@"<h1>Amazon SES Test (AWS SDK for .NET)</h1>
+            <p>This email was sent with
+            <a href='https://aws.amazon.com/ses/'>Amazon SES</a> using the
+            <a href='https://aws.amazon.com/sdk-for-net/'>
+            AWS SDK for .NET</a>.</p>");
 
 
             User fakeUser = new User("Test", "User", "mtibbett@ycp.edu", NotificationTypeEnum.ALL);
