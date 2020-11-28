@@ -97,7 +97,7 @@ namespace ControlRoomApplication.Controllers
                         EmailFields.setSubject("WARNING: WEATHER STATION");
                         EmailFields.setText($"WARNING:\r\nWind speeds are too high: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}");
                         EmailFields.setHtml($@"<h1>WARNING</h1>
-<p>Wind speeds are too high: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
+                        <p>Wind speeds are too high: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
                         pushNotification.send("WARNING: WEATHER STATION", "Wind speeds are too high: " + ControlRoom.WeatherStation.CurrentWindSpeedMPH);
                         pushNotification.sendEmail(false);
                     }
@@ -129,7 +129,7 @@ namespace ControlRoomApplication.Controllers
                         EmailFields.setSubject("WARNING: WEATHER STATION");
                         EmailFields.setText($"WARNING:\r\nWind speeds are in Warning Range: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}");
                         EmailFields.setHtml($@"<h1>WARNING</h1>
-<p>Wind speeds are in Warning Range: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
+                        <p>Wind speeds are in Warning Range: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
                         pushNotification.send("WARNING: WEATHER STATION", "Wind speeds are in Warning Range: " + ControlRoom.WeatherStation.CurrentWindSpeedMPH);
                         pushNotification.sendEmail(false);
                     }
