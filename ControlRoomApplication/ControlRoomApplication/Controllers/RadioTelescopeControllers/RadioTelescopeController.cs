@@ -345,7 +345,7 @@ namespace ControlRoomApplication.Controllers
                 EmailFields.setHtml($@"<h1>MOTOR TEMPERATURE</h1>
                 <p>{s} motor temperature BELOW stable temperature by {Math.Truncate(SimulationConstants.STABLE_MOTOR_TEMP - t.temp)} degrees Fahrenheit.</p>");
                 pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature BELOW stable temperature by " + Math.Truncate(SimulationConstants.STABLE_MOTOR_TEMP - t.temp) + " degrees Fahrenheit.");
-                pushNotification.sendEmail(false);
+                pushNotification.sendEmail();
                 // Only overrides if switch is true
                 if (!b) return false;
                 else return true;
@@ -357,7 +357,7 @@ namespace ControlRoomApplication.Controllers
                 EmailFields.setHtml($@"<h1>MOTOR TEMPERATURE</h1>
                 <p>{s} motor temperature OVERHEATING by {Math.Truncate(t.temp - max)} degrees Fahrenheit.</p>");
                 pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature OVERHEATING by " + Math.Truncate(t.temp - max) + " degrees Fahrenheit.");
-                pushNotification.sendEmail(false);
+                pushNotification.sendEmail();
 
                 // Only overrides if switch is true
                 if (!b) return false;
@@ -368,7 +368,7 @@ namespace ControlRoomApplication.Controllers
             EmailFields.setHtml($@"<h1>MOTOR TEMPERATURE</h1>
             <p>{s} motor temperature stable.</p>");
             pushNotification.send("MOTOR TEMPERATURE", s + " motor temperature stable.");
-            pushNotification.sendEmail(false);
+            pushNotification.sendEmail();
 
             return true;
         }
@@ -421,7 +421,7 @@ namespace ControlRoomApplication.Controllers
                 EmailFields.setHtml($@"<h1>SENSOR OVERRIDES</h1>
                 <p>Overriding {sensor} sensor.</p>");
                 pushNotification.send("SENSOR OVERRIDES", "Overriding " + sensor + " sensor.");
-                pushNotification.sendEmail(false);
+                pushNotification.sendEmail();
             }
             else
             {

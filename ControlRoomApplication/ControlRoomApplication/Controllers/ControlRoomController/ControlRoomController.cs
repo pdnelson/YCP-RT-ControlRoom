@@ -99,7 +99,7 @@ namespace ControlRoomApplication.Controllers
                         EmailFields.setHtml($@"<h1>WARNING</h1>
                         <p>Wind speeds are too high: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
                         pushNotification.send("WARNING: WEATHER STATION", "Wind speeds are too high: " + ControlRoom.WeatherStation.CurrentWindSpeedMPH);
-                        pushNotification.sendEmail(false);
+                        pushNotification.sendEmail();
                     }
                     DatabaseOperations.AddSensorStatusData(SensorStatus.Generate(SensorStatusEnum.WARNING, SensorStatusEnum.NORMAL, SensorStatusEnum.NORMAL, SensorStatusEnum.ALARM, currentSensor.Status));
                     //ControlRoom.RTControllerManagementThreads[0].checkCurrentSensorAndOverrideStatus();
@@ -131,7 +131,7 @@ namespace ControlRoomApplication.Controllers
                         EmailFields.setHtml($@"<h1>WARNING</h1>
                         <p>Wind speeds are in Warning Range: {ControlRoom.WeatherStation.CurrentWindSpeedMPH}</p>");
                         pushNotification.send("WARNING: WEATHER STATION", "Wind speeds are in Warning Range: " + ControlRoom.WeatherStation.CurrentWindSpeedMPH);
-                        pushNotification.sendEmail(false);
+                        pushNotification.sendEmail();
                     }
                     DatabaseOperations.AddSensorStatusData(SensorStatus.Generate(SensorStatusEnum.WARNING, SensorStatusEnum.NORMAL, SensorStatusEnum.NORMAL, SensorStatusEnum.ALARM, currentSensor.Status));
                 }

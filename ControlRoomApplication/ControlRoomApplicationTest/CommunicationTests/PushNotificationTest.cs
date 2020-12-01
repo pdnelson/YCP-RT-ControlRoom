@@ -29,7 +29,7 @@ namespace ControlRoomApplicationTest.CommunicationTests
         [TestMethod]
         public void TestPushNotificationFilePresence()
         {
-            Assert.IsTrue(pushNotification.send("TEST", "This should pass."));
+            Assert.IsTrue(pushNotification.send("TEST", "This should pass.", true));
         }
 
         [TestMethod]
@@ -38,7 +38,7 @@ namespace ControlRoomApplicationTest.CommunicationTests
             // If sendPush is false, set it to true
             if (!pushNotification.getSendPush()) pushNotification.setSendPush(true);
 
-            Assert.IsTrue(pushNotification.send("TEST", "This should pass."));
+            Assert.IsTrue(pushNotification.send("TEST", "This should pass.", true));
         }
 
         [TestMethod]

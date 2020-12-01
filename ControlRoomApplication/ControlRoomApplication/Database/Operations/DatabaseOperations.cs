@@ -330,7 +330,7 @@ namespace ControlRoomApplication.Database
 
             using (RTDbContext Context = InitializeDatabaseContext())
             {
-                AdminUsers = Context.Users.SqlQuery("SELECT * FROM user U INNER JOIN user_role UR ON U.id = UR.user_id WHERE UR.role = 'ADMIN'").ToList<User>();
+                AdminUsers = Context.Users.SqlQuery("SELECT * FROM user U INNER JOIN user_role UR ON U.id = UR.user_id WHERE UR.role = 'ADMIN'").ToList();
             }
             if(AdminUsers.Count() == 0)
             {
@@ -344,6 +344,23 @@ namespace ControlRoomApplication.Database
                 u.UR = ur;
             }
             return AdminUsers;
+        }
+
+        /// <summary>
+        /// Returns a list of all Admin Firebase IDs
+        /// </summary>
+        public static List<string> GetAllAdminFirebaseIDs()
+        {
+            List<string> FirebaseIds = new List<string>();
+
+            // Only admin users have firebase IDs, so we need to filter by admins too
+            List<User> Admins = GetAllAdminUsers();
+
+            foreach (User u in Admins)
+            {
+                FirebaseIds.Add(u.firebase_id);
+            }
+            return FirebaseIds;
         }
 
         /// <summary>

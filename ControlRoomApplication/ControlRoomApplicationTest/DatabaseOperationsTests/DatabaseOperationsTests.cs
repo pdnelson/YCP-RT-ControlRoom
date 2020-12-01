@@ -353,5 +353,13 @@ namespace ControlRoomApplicationTest.DatabaseOperationsTests
             Assert.IsTrue(AdminUsers.Count > 0);
             Assert.IsTrue(AdminUsers.All(user => user.UR._User_Role == UserRoleEnum.ADMIN));
         }
+        
+        [TestMethod]
+        public void TestGetAllAdminFirebaseIds()
+        {
+            List<string> AdminFirebaseIds = new List<string>();
+            AdminFirebaseIds = DatabaseOperations.GetAllAdminFirebaseIDs();
+            Assert.IsTrue(AdminFirebaseIds.Count > 0);
+        }
     }
 }

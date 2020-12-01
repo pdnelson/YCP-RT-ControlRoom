@@ -267,7 +267,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth CCW limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CCW limit switch hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -276,7 +276,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth CCW limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CCW limit switch NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -293,7 +293,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth_Home_One sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_One sensor hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -302,7 +302,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth_Home_One sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_One sensor NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -319,7 +319,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth_Home_Two sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_Two sensor hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -328,7 +328,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth_Home_Two sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth_Home_Two sensor NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -346,7 +346,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth CW limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CW limit switch hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -355,7 +355,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Azimuth CW limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Azimuth CW limit switch NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -373,7 +373,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation lower limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation lower limit switch hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -382,7 +382,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation lower limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation lower limit switch NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -399,7 +399,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation home sensor hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation home sensor hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -408,7 +408,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation home sensor NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation home sensor NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -426,7 +426,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation upper limit switch hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation upper limit switch hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -435,7 +435,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>LIMIT SWITCH</h1>
                                 <p>Elevation upper limit switch NOT hit</p>");
                                 pushNotification.send("LIMIT SWITCH", "Elevation upper limit switch NOT hit");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -452,7 +452,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>GATE ACTIVITY</h1>
                                 <p>Gate has been opened.</p>");
                                 pushNotification.send("GATE ACTIVITY", "Gate has been opened.");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -461,7 +461,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>GATE ACTIVITY</h1>
                                 <p>Gate has been closed.</p>");
                                 pushNotification.send("GATE ACTIVITY", "Gate has been closed.");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;
@@ -478,7 +478,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>E-STOP ACTIVITY</h1>
                                 <p>E-stop has been hit</p>");
                                 pushNotification.send("E-STOP ACTIVITY", "E-stop has been hit.");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                             else
                             {
@@ -487,7 +487,7 @@ namespace ControlRoomApplication.Controllers
                                 EmailFields.setHtml($@"<h1>E-STOP ACTIVITY</h1>
                                 <p>E-stop has been released</p>");
                                 pushNotification.send("E-STOP ACTIVITY", "E-stop has been released.");
-                                pushNotification.sendEmail(false);
+                                pushNotification.sendEmail();
                             }
                         }
                         break;

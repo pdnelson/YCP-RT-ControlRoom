@@ -11,8 +11,7 @@ namespace ControlRoomApplication.Entities
     public class User
     {
         public User()
-        {
-        }
+        {}
 
         public User(string firstName, string lastName, string email, NotificationTypeEnum e)
         {
@@ -92,5 +91,9 @@ namespace ControlRoomApplication.Entities
         [Column("phone_number")]
         [StringLength(25)]
         public string phone_number { get; set; }
+
+        [Column("firebase_id")]
+        [StringLength(100)]
+        public string firebase_id { get; set; }
     }
 }
