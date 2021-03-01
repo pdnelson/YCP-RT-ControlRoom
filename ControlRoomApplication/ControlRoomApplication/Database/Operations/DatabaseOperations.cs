@@ -42,6 +42,7 @@ namespace ControlRoomApplication.Database
                 }
                 catch (DbUpdateException ex)
                 {
+                    Console.WriteLine("DB EXCEPTION: " + ex);
                     // Update the values of the entity that failed to save from the store
                     if (ex.Entries.ToList().Count > 0)
                     {

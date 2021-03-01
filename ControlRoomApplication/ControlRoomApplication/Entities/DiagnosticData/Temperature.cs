@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ControlRoomApplication.Entities {
-    [Table( "Temperature" )]
+    [Table( "temperature" )]
     public class Temperature {
         public Temperature() {
 

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ControlRoomApplication.Entities {
-    [Table( "Acceleration" )]
+    [Table( "acceleration" )]
     public class Acceleration {
         public Acceleration() {
 
