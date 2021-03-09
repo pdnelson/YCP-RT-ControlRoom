@@ -960,14 +960,6 @@ namespace ControlRoomApplication.Controllers
         /// <param name="positionTranslationEL"></param>
         /// <returns></returns>
         public override bool relative_move( int programmedPeakSpeedAZInt , ushort ACCELERATION , int positionTranslationAZ , int positionTranslationEL ) {
-            if(IsSimulation)
-            {
-                CurrentSimOrientation = new Orientation(
-                    ConversionHelper.StepsToDegrees(positionTranslationAZ, MotorConstants.GEARING_RATIO_AZIMUTH),
-                    ConversionHelper.StepsToDegrees(positionTranslationEL, MotorConstants.GEARING_RATIO_ELEVATION)
-                );
-            }
-
             return send_relative_move( programmedPeakSpeedAZInt , programmedPeakSpeedAZInt , ACCELERATION , positionTranslationAZ , positionTranslationEL ).GetAwaiter().GetResult();
         }
 
@@ -1007,8 +999,34 @@ namespace ControlRoomApplication.Controllers
             logger.Info("degrees target az " + target_orientation.Azimuth + " el " + target_orientation.Elevation);
             logger.Info("degrees curren az " + current_orientation.Azimuth + " el " + current_orientation.Elevation);
 
-            // Set the simulation's current position
-            if(IsSimulation) CurrentSimOrientation = target_orientation;
+            // This is a workaround for a bug found in the simulation code. See the GitHub issue in the commit message
+            // for more details. If the source code is found and this is properly fixed, this commit can be reverted.
+            if(IsSimulation)
+            {
+                // Crosses 0 degrees counter-clockwise
+                if(Math.Round(current_orientation.Azimuth) % 360 != 0 && current_orientation.Azimuth + azimuthOrientationMovement < 0)
+                {
+                    // Calculate azimuth movement part 2
+                    double azMove2 = current_orientation.Azimuth + azimuthOrientationMovement;
+                    int simPosTransAz2 = ConversionHelper.DegreesToSteps(azMove2, MotorConstants.GEARING_RATIO_AZIMUTH);
+
+                    // Calculate azimuth movement part 1
+                    double azMove1 = azimuthOrientationMovement - azMove2;
+                    int simPosTransAz1 = ConversionHelper.DegreesToSteps(azMove1, MotorConstants.GEARING_RATIO_AZIMUTH);
+
+                    // Move the simulated telescope in two movements
+                    send_relative_move(AZ_Speed, EL_Speed, 50, simPosTransAz1, positionTranslationEL).Wait();
+                    send_relative_move(AZ_Speed, EL_Speed, 50, simPosTransAz2, 0).Wait();
+                    return Task.FromResult(true);
+                }
+
+                // Crosses 0 degrees clockwise
+                else if (Math.Round(current_orientation.Azimuth) % 360 != 0 && current_orientation.Azimuth + azimuthOrientationMovement > 360)
+                {
+                    System.Windows.Forms.MessageBox.Show("crosses 0 clockwise");
+                    return Task.FromResult(true);
+                }
+            }
 
             //return sendmovecomand( EL_Speed * 20 , 50 , positionTranslationAZ , positionTranslationEL ).GetAwaiter().GetResult();
             return send_relative_move( AZ_Speed , EL_Speed ,50, positionTranslationAZ , positionTranslationEL );
@@ -1031,6 +1049,28 @@ namespace ControlRoomApplication.Controllers
         }
 
         public async Task<bool> send_relative_move( int SpeedAZ , int SpeedEL , ushort ACCELERATION , int positionTranslationAZ , int positionTranslationEL ) {
+
+            // This is so we can keep track of the simulation's position. This is only temporary until we get the simulation's
+            // source code.
+            if (IsSimulation)
+            {
+                CurrentSimOrientation = new Orientation(
+                    ConversionHelper.StepsToDegrees(positionTranslationAZ, MotorConstants.GEARING_RATIO_AZIMUTH) + CurrentSimOrientation.Azimuth,
+                    ConversionHelper.StepsToDegrees(positionTranslationEL, MotorConstants.GEARING_RATIO_ELEVATION) + CurrentSimOrientation.Elevation
+                );
+
+                // If telescope is slip ring, normalize AZ orientation
+                if(telescopeType == RadioTelescopeTypeEnum.SLIP_RING)
+                {
+                    CurrentSimOrientation.Azimuth = CurrentSimOrientation.Azimuth % 360;
+
+                    if (CurrentSimOrientation.Azimuth < 0)
+                    {
+                        CurrentSimOrientation.Azimuth += 360;
+                    }
+                }
+            }
+
             return MCU.MoveAndWaitForCompletion( SpeedAZ , SpeedEL , ACCELERATION , positionTranslationAZ , positionTranslationEL ,2).GetAwaiter().GetResult();
         }
 
