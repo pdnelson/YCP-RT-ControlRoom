@@ -164,5 +164,12 @@ namespace ControlRoomApplication.Controllers
         public abstract Task<bool[]> GET_MCU_Status( RadioTelescopeAxisEnum axis );
 
         public abstract void setTelescopeType(RadioTelescopeTypeEnum type);
+
+        /// <summary>
+        /// This is a script that will spin the azimuth motor endlessly counterclockwise until the user cancels it with
+        /// an immediate stop.
+        /// </summary>
+        /// <returns>Returns a bool to tell whether the movement was successful or not.</returns>
+        public abstract Task<bool> EndlessAzimuthRotationCCW();
     }
 }

@@ -789,6 +789,21 @@ namespace ControlRoomApplication.Controllers
         }
 
         /// <summary>
+        /// This is a script that will spin the azimuth motor endlessly counterclockwise until the user cancels it with
+        /// an immediate stop.
+        /// </summary>
+        /// <returns>Returns a bool to tell whether the movement was successful or not.</returns>
+        public override Task<bool> EndlessAzimuthRotationCCW()
+        {
+            // Convert 360 degress to motor steps, so that the motor steps all around the azimuth ring
+            int positionTranslationAZ = ConversionHelper.DegreesToSteps(360, MotorConstants.GEARING_RATIO_AZIMUTH);
+            int AZ_Speed = ConversionHelper.DPSToSPS(ConversionHelper.RPMToDPS(0.6), MotorConstants.GEARING_RATIO_AZIMUTH);
+            
+            // Make the actual movement. We are only moving the azimuth ring, so the elevation will stay in the same place.
+            return send_relative_move(AZ_Speed, 0, 50, positionTranslationAZ, 0);
+        }
+
+        /// <summary>
         /// This is a script that is called when we want to move the telescope in a full 360 degree azimuth rotation
         /// The clockwise direction
         /// </summary>

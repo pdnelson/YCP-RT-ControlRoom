@@ -117,9 +117,12 @@ namespace ControlRoomApplication.Main
 
             this.FormClosing += FreeControlForm_Closing;
 
-          //  var threads = controlRoom.RTControllerManagementThreads.Where<RadioTelescopeControllerManagementThread>(t => t.RTController == rtController).ToList<RadioTelescopeControllerManagementThread>();
-         //   threads[0].ManagementThread.Abort();
-           // controlRoom.RTControllerManagementThreads.Where<RadioControllerManagementThread>( t => t.R == rtController));
+            //  var threads = controlRoom.RTControllerManagementThreads.Where<RadioTelescopeControllerManagementThread>(t => t.RTController == rtController).ToList<RadioTelescopeControllerManagementThread>();
+            //   threads[0].ManagementThread.Abort();
+            // controlRoom.RTControllerManagementThreads.Where<RadioControllerManagementThread>( t => t.R == rtController));
+
+            // Set the default script selection
+            controlScriptsCombo.SelectedIndex = 0;
 
             logger.Info("Radio Telescope Control Form Initalized");
         }
@@ -511,6 +514,7 @@ namespace ControlRoomApplication.Main
             RadioTelescope tele = rtController.RadioTelescope;
 
             Thread thread =new Thread(() => { } );
+            bool afterStart = true;
 
             switch (caseSwitch)
             {
@@ -638,7 +642,19 @@ namespace ControlRoomApplication.Main
                             MessageBox.Show("Custom Orientation script cancelled.", "Script Cancelled");
                         }
                     });
-                    // Custom azimuth position. This is only used to test the slip ring implementation
+                    // Custom orientation. This will allow the user to move the telescope to any orientation
+                    break;
+                case 12:
+                    afterStart = false;
+                    thread = new Thread(() =>
+                    {
+                        tele.PLCDriver.EndlessAzimuthRotationCCW();
+                    });
+                    thread.Start();
+                    MessageBox.Show("Spinning azimuth clockwise endlessly. Press OK to stop the movement.");
+                    tele.PLCDriver.Immediade_stop();
+
+                    // Endless azimuth movement. This will endlessly push the azimuth orientation counterclockwise
                     break;
                 default:
 
@@ -646,7 +662,7 @@ namespace ControlRoomApplication.Main
                     break;
             }
             try {
-                thread.Start();
+                if(afterStart) thread.Start();
             } catch {
 
             }

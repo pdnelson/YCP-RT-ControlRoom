@@ -434,5 +434,15 @@ namespace ControlRoomApplication.Controllers {
         {
             throw new NotImplementedException();
         }
+
+        /// <summary>
+        /// This is a script that will spin the azimuth motor endlessly counterclockwise until the user cancels it with
+        /// an immediate stop. It is NOT implemented in the scale model.
+        /// </summary>
+        /// <returns>Returns a bool to tell whether the movement was successful or not.</returns>
+        public override Task<bool> EndlessAzimuthRotationCCW()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
