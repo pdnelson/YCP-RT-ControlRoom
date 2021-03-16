@@ -645,24 +645,31 @@ namespace ControlRoomApplication.Main
                     // Custom orientation. This will allow the user to move the telescope to any orientation
                     break;
                 case 12:
-                    afterStart = false;
-                    bool keepSpinning = true;
-
-                    thread = new Thread(() =>
+                    if (tele._TeleType == RadioTelescopeTypeEnum.SLIP_RING)
                     {
-                        while(keepSpinning) tele.PLCDriver.EndlessAzimuthRotationCCW();
-                    });
-                    thread.Start();
+                        afterStart = false;
+                        bool keepSpinning = true;
 
-                    MessageBox.Show("Spinning azimuth clockwise endlessly. Press OK to stop the movement.");
+                        thread = new Thread(() =>
+                        {
+                            while (keepSpinning) tele.PLCDriver.EndlessAzimuthRotationCCW();
+                        });
+                        thread.Start();
 
-                    // Tell the telescope to stop spinning
-                    keepSpinning = false;
-                    tele.PLCDriver.Immediade_stop();
-                    thread.Join();
+                        MessageBox.Show("Spinning azimuth clockwise endlessly. Press OK to stop the movement.");
 
-                    MessageBox.Show("Telescope movement stopped successfully.");
+                        // Tell the telescope to stop spinning
+                        keepSpinning = false;
+                        tele.PLCDriver.Immediade_stop();
+                        thread.Join();
 
+                        MessageBox.Show("Telescope movement stopped successfully.");
+
+                    }
+                    else MessageBox.Show(
+                            $"This script can only run if the telescope type is set to {RadioTelescopeTypeEnum.SLIP_RING}\n" +
+                            $"The Radio Telescope is currently set to type {tele._TeleType}"
+                            );
                     // Endless azimuth movement. This will endlessly push the azimuth orientation counterclockwise
                     break;
                 default:
