@@ -646,13 +646,22 @@ namespace ControlRoomApplication.Main
                     break;
                 case 12:
                     afterStart = false;
+                    bool keepSpinning = true;
+
                     thread = new Thread(() =>
                     {
-                        tele.PLCDriver.EndlessAzimuthRotationCCW();
+                        while(keepSpinning) tele.PLCDriver.EndlessAzimuthRotationCCW();
                     });
                     thread.Start();
+
                     MessageBox.Show("Spinning azimuth clockwise endlessly. Press OK to stop the movement.");
+
+                    // Tell the telescope to stop spinning
+                    keepSpinning = false;
                     tele.PLCDriver.Immediade_stop();
+                    thread.Join();
+
+                    MessageBox.Show("Telescope movement stopped successfully.");
 
                     // Endless azimuth movement. This will endlessly push the azimuth orientation counterclockwise
                     break;
