@@ -798,8 +798,10 @@ namespace ControlRoomApplication.Controllers
         /// <returns>Returns a bool to tell whether the movement was successful or not.</returns>
         public override Task<bool> EndlessAzimuthRotationCCW()
         {
+            Orientation current = read_Position();
+
             // Convert 360 degress to motor steps, so that the motor steps all around the azimuth ring
-            int positionTranslationAZ = ConversionHelper.DegreesToSteps(360, MotorConstants.GEARING_RATIO_AZIMUTH);
+            int positionTranslationAZ = ConversionHelper.DegreesToSteps(current.Azimuth + 359, MotorConstants.GEARING_RATIO_AZIMUTH);
             int AZ_Speed = ConversionHelper.DPSToSPS(ConversionHelper.RPMToDPS(0.6), MotorConstants.GEARING_RATIO_AZIMUTH);
             
             // Make the actual movement. We are only moving the azimuth ring, so the elevation will stay in the same place.
@@ -963,8 +965,8 @@ namespace ControlRoomApplication.Controllers
             return MCU.Controled_stop(2);
         }
 
-        public override bool Immediade_stop() {
-            return MCU.Immediade_stop(2);
+        public override bool ImmediateStop() {
+            return MCU.ImmediateStop(2);
         }
 
         // Is called when the PLC and/or MCU is shutdown, stows the telescope

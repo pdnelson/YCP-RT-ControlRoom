@@ -662,7 +662,7 @@ namespace ControlRoomApplication.Main
 
                         // Tell the telescope to stop spinning
                         keepSpinning = false;
-                        tele.PLCDriver.Immediade_stop();
+                        tele.PLCDriver.ImmediateStop();
                         thread.Join();
 
                         MessageBox.Show("Telescope movement stopped successfully.");
