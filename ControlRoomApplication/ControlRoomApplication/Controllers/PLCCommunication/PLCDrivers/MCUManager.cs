@@ -493,7 +493,7 @@ namespace ControlRoomApplication.Controllers {
             return true;
         }
 
-        public bool Immediade_stop( int priority ) {
+        public bool ImmediateStop( int priority ) {
             Send_Generic_Command_And_Track( new MCUcomand( MESSAGE_CONTENTS_IMMEDIATE_STOP , MCUcomandType.IMIDEAT_STOP , priority ) { completed = true } ).GetAwaiter().GetResult();
             return true;
         }
@@ -570,7 +570,7 @@ namespace ControlRoomApplication.Controllers {
                     Controled_stop( priority );
                     WatTillStopped().Wait();
                 } else {
-                    Immediade_stop( priority );
+                    ImmediateStop( priority );
                 }
             }
             return true;
@@ -723,7 +723,7 @@ namespace ControlRoomApplication.Controllers {
             ushort[] data = {   MakeMcuConfMSW(AZconfig), MakeMcuConfLSW(AZconfig) , (ushort)(gearedSpeedAZ >> 0x0010), (ushort)(gearedSpeedAZ & 0xFFFF), 0x0,0x0,0x0,0x0,0x0,0x0,
                                 MakeMcuConfMSW(ELconfig), MakeMcuConfLSW(ELconfig), (ushort)(gearedSpeedEL >> 0x0010), (ushort)(gearedSpeedEL & 0xFFFF), 0x0,0x0,0x0,0x0,0x0,0x0 };
 
-            Immediade_stop( priority );
+            ImmediateStop( priority );
             Task.Delay( 50 ).Wait();
             checkForAndResetErrors();
             Task.Delay( 50 ).Wait();

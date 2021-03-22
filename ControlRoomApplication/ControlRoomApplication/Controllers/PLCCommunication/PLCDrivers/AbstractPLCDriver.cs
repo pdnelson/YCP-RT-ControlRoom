@@ -131,7 +131,7 @@ namespace ControlRoomApplication.Controllers
 
         public abstract bool Controled_stop();
 
-        public abstract bool Immediade_stop();
+        public abstract bool ImmediateStop();
 
         public abstract bool relative_move(int programmedPeakSpeedAZInt, ushort ACCELERATION, int positionTranslationAZ, int positionTranslationEL);
 
