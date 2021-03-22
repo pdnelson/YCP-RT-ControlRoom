@@ -736,6 +736,7 @@ namespace ControlRoomApplication.Main
             this.plusJogButton.TabIndex = 7;
             this.plusJogButton.Text = "+ Jog";
             this.plusJogButton.UseVisualStyleBackColor = false;
+            this.plusJogButton.Click += new System.EventHandler(this.plusJogButton_Click);
             this.plusJogButton.MouseDown += new System.Windows.Forms.MouseEventHandler(this.plusJogButton_Down);
             this.plusJogButton.MouseUp += new System.Windows.Forms.MouseEventHandler(this.plusJogButton_UP);
             // 
