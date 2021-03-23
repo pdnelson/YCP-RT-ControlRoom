@@ -1020,7 +1020,6 @@ namespace ControlRoomApplication.GUI
 
         }
 
-
         private void btnAzimuthAbsoluteEncoder_Click(object sender, EventArgs e)
         {
             if (!rtController.overrides.overrideAzimuthAbsEncoder)
@@ -1110,6 +1109,5 @@ namespace ControlRoomApplication.GUI
                 rtController.setOverride("counterbalance accelerometer", false);
             }
         }
-
     }
 }
